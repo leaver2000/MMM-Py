@@ -38,17 +38,20 @@ Optional: pygrib
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy as np
-from matplotlib import pyplot as plt
-import datetime
-from mpl_toolkits.basemap import Basemap, cm
-from netCDF4 import Dataset
-from struct import unpack
+
 import os
 import time
-import calendar
 import gzip
+import datetime
+import calendar
+from struct import unpack
+
 import six
+import numpy as np
+import matplotlib.pyplot as plt
+from netCDF4 import Dataset
+
+from mpl_toolkits.basemap import Basemap, cm
 try:
     import pygrib
     IMPORT_FLAG = True
