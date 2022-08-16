@@ -233,7 +233,7 @@ class MosaicTile:
         print("                            three_panel_plot()")
         _method_footer_printout()
 
-    def read_mosaic_netcdf(self, full_path_and_filename, verbose=False) -> bool:
+    def read_mosaic_netcdf(self, abspath, verbose=False) -> bool:
         """
         Reads MRMS NetCDF mosaic tiles.
         Attempts to distinguish between v1 (<= 7/30/2013)
@@ -244,9 +244,9 @@ class MosaicTile:
         method_name = "read_mosaic_netcdf"
         if verbose:
             _method_header_printout(method_name)
-            print(method_name + "(): Reading", full_path_and_filename)
+            print(method_name + "(): Reading", abspath)
         try:
-            fileobj = Dataset(full_path_and_filename, "r")
+            fileobj = Dataset(abspath, "r")
         except:
             if verbose:
                 print("Not an MRMS netcdf file")
@@ -270,7 +270,7 @@ class MosaicTile:
                 print("read_mosaic_netcdf(): Unknown MRMS version, not read")
                 _method_footer_printout()
             return False
-        self.Filename = os.path.basename(full_path_and_filename)
+        self.Filename = os.path.basename(abspath)
         self.nz = fileobj.variables[label].shape[0]
         self.nlat = fileobj.variables[label].shape[1]
         self.nlon = fileobj.variables[label].shape[2]
@@ -293,7 +293,7 @@ class MosaicTile:
             _method_footer_printout()
         return True
 
-    def read_mosaic_binary(self, full_path_and_filename, verbose=False) -> bool:
+    def read_mosaic_binary(self, abspath: str, verbose: bool = False) -> bool:
         """
         Reads gzipped MRMS binary files and populates MosaicTile fields.
         Attempts to distinguish between v1 (<= 7/30/2013) and v2 (>= 7/30/2013)
@@ -304,43 +304,42 @@ class MosaicTile:
         if verbose:
             begin_time = time.time()
             _method_header_printout("read_mosaic_binary")
-            print("Reading", full_path_and_filename)
+            print("Reading", abspath)
         # Check to see if a real MRMS binary file
-        if full_path_and_filename[-3:] == ".gz":
-            f = gzip.open(full_path_and_filename, "rb")
-        else:
-            f = open(full_path_and_filename, "rb")
-        try:
-            self.Time = calendar.timegm(1 * np.array(_fill_list(f, 6, 0)))
-        except:
-            if verbose:
-                print("Not an MRMS binary file")
-                _method_footer_printout()
-            return False
-        if self.Time >= V1_TO_V2_CHANGEOVER_EPOCH_TIME:
-            self.Version = 2
-            self.Duration = V2_DURATION
-        else:
-            self.Version = 1
-            self.Duration = V1_DURATION
-        self.Variables = [DEFAULT_VAR]
-        self.Filename = os.path.basename(full_path_and_filename)
-        # Get dimensionality from header, use to define datatype
-        f.seek(24)
-        self.nlon, self.nlat, self.nz = unpack(ENDIAN + 3 * INTEGER, f.read(12))
-        f.seek(80 + self.nz * 4 + 78)
-        (NR,) = unpack(ENDIAN + INTEGER, f.read(4))
-        dt = self._construct_dtype(NR)
-        # Rewind and then read everything into the pre-defined datatype.
-        # np.fromstring() nearly 3x faster performance than struct.unpack()!
-        f.seek(0)
-        fileobj = np.fromstring(
-            f.read(
-                80 + 4 * self.nz + 82 + 4 * NR + 2 * self.nlon * self.nlat * self.nz
-            ),
-            dtype=dt,
-        )
-        f.close()
+        with gzip.open(abspath, "rb") if abspath.endswith(".gz") else open(
+            abspath, "rb"
+        ) as f:
+
+            try:
+                self.Time = calendar.timegm(1 * np.array(_fill_list(f, 6, 0)))
+            except:
+                if verbose:
+                    print("Not an MRMS binary file")
+                    _method_footer_printout()
+                return False
+            if self.Time >= V1_TO_V2_CHANGEOVER_EPOCH_TIME:
+                self.Version = 2
+                self.Duration = V2_DURATION
+            else:
+                self.Version = 1
+                self.Duration = V1_DURATION
+            self.Variables = [DEFAULT_VAR]
+            self.Filename = os.path.basename(abspath)
+            # Get dimensionality from header, use to define datatype
+            f.seek(24)
+            self.nlon, self.nlat, self.nz = unpack(ENDIAN + 3 * INTEGER, f.read(12))
+            f.seek(80 + self.nz * 4 + 78)
+            (NR,) = unpack(ENDIAN + INTEGER, f.read(4))
+            dt = self._construct_dtype(NR)
+            # Rewind and then read everything into the pre-defined datatype.
+            # np.fromstring() nearly 3x faster performance than struct.unpack()!
+            f.seek(0)
+            fileobj = np.fromstring(
+                f.read(
+                    80 + 4 * self.nz + 82 + 4 * NR + 2 * self.nlon * self.nlat * self.nz
+                ),
+                dtype=dt,
+            )
         # Populate Latitude, Longitude, and Height
         self.StartLon = 1.0 * fileobj["StartLon"][0] / fileobj["map_scale"][0]
         self.StartLat = 1.0 * fileobj["StartLat"][0] / fileobj["map_scale"][0]
@@ -386,14 +385,14 @@ class MosaicTile:
         Arguments/Keywords (passed to MosaicGrib)
         -----------------------------------------
         filename = Single string or list of strings, can be for grib2 or
-                   netCDFs created by wgrib2
+        netCDFs created by wgrib2
         wgrib2_path = Path to wgrib2 executable
         wgrib2_name = Name of wgrib2 executable
         keep_nc = Set to False to erase netCDFs created by wgrib2
         verbose = Set to True to get text updates on progress
         nc_path = Path to directory where netCDFs will be created
-        lat/lonrange = 2-element lists used to subsection grib data
-                       before ingest
+        lat/lonrange =  2-element lists used to subsection grib data
+                        before ingest
         """
         if verbose:
             begin_time = time.time()
@@ -437,7 +436,7 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def get_comp(self, var=DEFAULT_VAR, verbose=False):
+    def get_comp(self, var=DEFAULT_VAR, verbose: bool = False):
         """
         Compute maximum reflectivity in column and returns as a new 2-D field.
         Uses numpy.amax() function, which provides great performance.
@@ -460,7 +459,7 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def diag(self, verbose=False):
+    def diag(self, verbose: bool = False):
         """
         Prints out diagnostic information and produces
         a basic plot of tile/stitch composite reflectivity.
@@ -482,7 +481,7 @@ class MosaicTile:
         print("Done!")
         _method_footer_printout()
 
-    def write_mosaic_binary(self, full_path_and_filename=None, verbose=False):
+    def write_mosaic_binary(self, abspath=None, verbose: bool = False):
         """
                 Major reference:
         ftp://ftp.nssl.noaa.gov/users/langston/MRMS_REFERENCE/MRMS_BinaryFormat.pdf
@@ -491,22 +490,21 @@ class MosaicTile:
                 if reading on a different Endian machine than files were produced.
                 You can write out a subsectioned or a stitched mosaic and it will
                 be readable by read_mosaic_binary().
-                full_path_and_filename = Filename (including path).
-                                         Include the .gz suffix.
+                abspath = Filename (including path).Include the .gz suffix.
                 verbose = Set to True to get some text response.
         """
         if verbose:
             _method_header_printout("write_mosaic_binary")
             begin_time = time.time()
-        if full_path_and_filename is None:
-            full_path_and_filename = DEFAULT_FILENAME
-        elif full_path_and_filename[-3:] != ".gz":
-            full_path_and_filename += ".gz"
+        if abspath is None:
+            abspath = DEFAULT_FILENAME
+        elif abspath[-3:] != ".gz":
+            abspath += ".gz"
         if verbose:
-            print("Writing MRMS binary format to", full_path_and_filename)
+            print("Writing MRMS binary format to", abspath)
         header = self._construct_header()
         data1d = self._construct_1d_data()
-        output = gzip.open(full_path_and_filename, "wb")
+        output = gzip.open(abspath, "wb")
         output.write(header + data1d.tostring())
         output.close()
         if verbose:
@@ -548,7 +546,7 @@ class MosaicTile:
             _method_footer_printout()
 
     def output_composite(
-        self, full_path_and_filename=DEFAULT_FILENAME, var=DEFAULT_VAR, verbose=False
+        self, abspath=DEFAULT_FILENAME, var=DEFAULT_VAR, verbose: bool = False
     ):
         """
         Produces a gzipped binary file containing only a composite of
@@ -572,7 +570,7 @@ class MosaicTile:
         temp3d = getattr(self, var)
         temp3d[0, :, :] = temp2d[:, :]
         setattr(self, var, temp3d)
-        self.write_mosaic_binary(full_path_and_filename, verbose)
+        self.write_mosaic_binary(abspath, verbose)
         if verbose:
             _method_footer_printout()
 
@@ -872,7 +870,7 @@ class MosaicGrib(object):
         wgrib2_path=WGRIB2_PATH,
         keep_nc=True,
         wgrib2_name=WGRIB2_NAME,
-        verbose=False,
+        verbose: bool = False,
         nc_path=TMPDIR,
         latrange=None,
         lonrange=None,
@@ -1014,13 +1012,11 @@ class MosaicGrib(object):
         else:
             self.nclist = nclist
             self.format_netcdf_data()
-        if verbose:
-            print("MosaicGrib:", time.time() - begin_time, "seconds to run")
 
-    def convert_array_to_string(self, array):
-        return str(np.min(array)) + ":" + str(np.max(array))
+    def convert_array_to_string(self, array: tuple[float, ...]) -> str:
+        return f"{np.min(array)}:{np.max(array)}"
 
-    def get_height_from_name(self, name):
+    def get_height_from_name(self, name) -> float:
         """
         Given a reflectivity variable name, get height information.
         Works on CONUS and CONUSPlus MRMS mosaics.
@@ -2158,11 +2154,8 @@ def _fill_list(f, size, offset):
     return _list
 
 
-def _are_equal(num1, num2):
-    if np.abs(num1 - num2) < 0.001:
-        return True
-    else:
-        return False
+def _are_equal(num1: float, num2: float) -> bool:
+    return np.abs(num1 - num2) < 0.001
 
 
 ###################################################
