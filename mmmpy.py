@@ -152,18 +152,18 @@ class MosaicTile:
 
     def __init__(
         self,
-        filename:list[str]|str=None,
-        # 
-        nc_path:str|Path=TMPDIR,
-        wgrib2_path:str|Path=WGRIB2_PATH,
-        # 
-        wgrib2_name:str|Path=WGRIB2_NAME,
-        # 
-        latrange:tuple[float,float]=MRMS_V3_LATRANGE,
-        lonrange:tuple[float,float]=MRMS_V3_LONRANGE,
-        # 
-        verbose:bool=False,
-        keep_nc:bool=True,
+        filename: list[str] | str = None,
+        #
+        nc_path: str | Path = TMPDIR,
+        wgrib2_path: str | Path = WGRIB2_PATH,
+        #
+        wgrib2_name: str | Path = WGRIB2_NAME,
+        #
+        latrange: tuple[float, float] = MRMS_V3_LATRANGE,
+        lonrange: tuple[float, float] = MRMS_V3_LONRANGE,
+        #
+        verbose: bool = False,
+        keep_nc: bool = True,
     ):
         """
         If initialized with a filename (incl. path), will call
@@ -233,7 +233,7 @@ class MosaicTile:
         print("                            three_panel_plot()")
         _method_footer_printout()
 
-    def read_mosaic_netcdf(self, full_path_and_filename, verbose=False) ->bool:
+    def read_mosaic_netcdf(self, full_path_and_filename, verbose=False) -> bool:
         """
         Reads MRMS NetCDF mosaic tiles.
         Attempts to distinguish between v1 (<= 7/30/2013)
@@ -293,7 +293,7 @@ class MosaicTile:
             _method_footer_printout()
         return True
 
-    def read_mosaic_binary(self, full_path_and_filename, verbose=False)->bool:
+    def read_mosaic_binary(self, full_path_and_filename, verbose=False) -> bool:
         """
         Reads gzipped MRMS binary files and populates MosaicTile fields.
         Attempts to distinguish between v1 (<= 7/30/2013) and v2 (>= 7/30/2013)
@@ -368,14 +368,14 @@ class MosaicTile:
 
     def read_mosaic_grib(
         self,
-        filename:Iterable[Path],
-        wgrib2_path:str=WGRIB2_PATH,
-        keep_nc:bool=True,
-        wgrib2_name:str=WGRIB2_NAME,
-        verbose:bool=False,
-        nc_path:str=TMPDIR,
-        latrange:tuple[float,float]=...,
-        lonrange:tuple[float,float]=...,
+        filename: Iterable[Path],
+        wgrib2_path: str = WGRIB2_PATH,
+        keep_nc: bool = True,
+        wgrib2_name: str = WGRIB2_NAME,
+        verbose: bool = False,
+        nc_path: str = TMPDIR,
+        latrange: tuple[float, float] = ...,
+        lonrange: tuple[float, float] = ...,
     ):
         """
         Method that is capable of reading grib2-format MRMS mosaics.
@@ -513,8 +513,13 @@ class MosaicTile:
             print(time.time() - begin_time, "seconds to complete")
             _method_footer_printout()
 
-    def subsection(self,         latrange:tuple[float,float]=...,
-        lonrange:tuple[float,float]=..., zrange=None, verbose:bool=False):
+    def subsection(
+        self,
+        latrange: tuple[float, float] = ...,
+        lonrange: tuple[float, float] = ...,
+        zrange=None,
+        verbose: bool = False,
+    ):
         """
         Subsections a tile (or stitch) by keeping data only within the given
         2-element lists: latrange (deg), lonrange (deg), zrange (km).
@@ -863,7 +868,7 @@ class MosaicGrib(object):
 
     def __init__(
         self,
-        file_list:Iterable[Path],
+        file_list: Iterable[Path],
         wgrib2_path=WGRIB2_PATH,
         keep_nc=True,
         wgrib2_name=WGRIB2_NAME,
@@ -908,14 +913,14 @@ class MosaicGrib(object):
 
     def read_grib_list(
         self,
-        file_list:Iterable[Path],
+        file_list: Iterable[Path],
         wgrib2_path=...,
         wgrib2_name=...,
-        nc_path:Path=...,
+        nc_path: Path = ...,
         keep_nc=True,
         verbose=False,
-        latrange:tuple[float,float]=None,
-        lonrange:tuple[float,float]=None,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
     ):
         """
         Actual reading of grib2 and netCDF files occurs here.
