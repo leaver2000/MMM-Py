@@ -63,7 +63,7 @@ import gzip
 import calendar
 import datetime
 from struct import unpack
-
+from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
@@ -132,7 +132,6 @@ V1_TO_V2_CHANGEOVER_EPOCH_TIME = 1_375_200_000
 # MosaicTile class
 ###################################################
 
-
 class MosaicTile:
     """
     Overview
@@ -188,7 +187,9 @@ class MosaicTile:
         """
         if filename is None:
             return
-
+        flag = self.read_mosaic_netcdf(filename, verbose=verbose)
+        print( isinstance(filename, six.string_types))
+        return 
         if not isinstance(filename, six.string_types):
             self.read_mosaic_grib(
                 filename,
@@ -203,6 +204,7 @@ class MosaicTile:
         else:
             try:
                 flag = self.read_mosaic_binary(filename, verbose=verbose)
+                print(flag)
                 if not flag:
                     flag = self.read_mosaic_netcdf(filename, verbose=verbose)
                     if not flag:
@@ -250,45 +252,32 @@ class MosaicTile:
         v2 are produced from original binary tiles by MRMS_to_CFncdf.
         Reads the file and populates class attributes.
         """
-        method_name = "read_mosaic_netcdf"
-        if verbose:
-            _method_header_printout(method_name)
-            print(method_name + "(): Reading", full_path_and_filename)
         try:
-            fileobj = Dataset(full_path_and_filename, "r")
-        except:
-            if verbose:
-                print("Not an MRMS netcdf file")
-                _method_footer_printout()
+            ds = Dataset(full_path_and_filename, "r")
+        except FileNotFoundError:
             return False
         # Get data and metadata
-        keys = fileobj.variables.keys()
-        self.Version = None
-        for element in keys:
-            if element == "mrefl_mosaic":
-                self.Version = 1
-                label = element
-                break
-            if element == "MREFL":
-                self.Version = 2
-                label = element
-                break
-        if self.Version is None:
-            del self.Version
-            if verbose:
-                print("read_mosaic_netcdf(): Unknown MRMS version, not read")
-                _method_footer_printout()
-            return False
+        keys = ds.variables.keys()
+        if "mrefl_mosaic" in keys:
+            self.Version = 1
+            label = "mrefl_mosaic"
+        elif "MREFL" in keys:
+            self.Version = 2
+            label = "MREFL"
+        else:
+            raise Exception
+            
         self.Filename = os.path.basename(full_path_and_filename)
-        self.nz = fileobj.variables[label].shape[0]
-        self.nlat = fileobj.variables[label].shape[1]
-        self.nlon = fileobj.variables[label].shape[2]
-        self.LatGridSpacing = fileobj.LatGridSpacing
-        self.LonGridSpacing = fileobj.LonGridSpacing
+
+        self.nz, self.nlat, self.nlon = ds.variables[label].shape[:3]
+
+        self.LatGridSpacing = ds.LatGridSpacing
+        self.LonGridSpacing = ds.LonGridSpacing
         if self.Version == 1:
-            lat, lon = self._populate_v1_specific_data(fileobj, label)
+            lat, lon = self._populate_v1_specific_data(ds, label)
         if self.Version == 2:
-            lat, lon = self._populate_v2_specific_data(fileobj, label)
+            lat, lon = self._populate_v2_specific_data(ds, label)
+            
         self.Longitude, self.Latitude = np.meshgrid(lon, lat)
         # Fix for v1 MRMS NetCDFs produced by mrms_to_CFncdf from v1 binaries
         # These look like v2 to mmmpy, and thus could impact stitching
@@ -345,7 +334,7 @@ class MosaicTile:
         # Rewind and then read everything into the pre-defined datatype.
         # np.fromstring() nearly 3x faster performance than struct.unpack()!
         f.seek(0)
-        fileobj = np.fromstring(
+        ds = np.fromstring(
             f.read(
                 80 + 4 * self.nz + 82 + 4 * NR + 2 * self.nlon * self.nlat * self.nz
             ),
@@ -353,22 +342,22 @@ class MosaicTile:
         )
         f.close()
         # Populate Latitude, Longitude, and Height
-        self.StartLon = 1.0 * fileobj["StartLon"][0] / fileobj["map_scale"][0]
-        self.StartLat = 1.0 * fileobj["StartLat"][0] / fileobj["map_scale"][0]
-        self.LonGridSpacing = 1.0 * fileobj["dlon"][0] / fileobj["dxy_scale"][0]
-        self.LatGridSpacing = 1.0 * fileobj["dlat"][0] / fileobj["dxy_scale"][0]
+        self.StartLon = 1.0 * ds["StartLon"][0] / ds["map_scale"][0]
+        self.StartLat = 1.0 * ds["StartLat"][0] / ds["map_scale"][0]
+        self.LonGridSpacing = 1.0 * ds["dlon"][0] / ds["dxy_scale"][0]
+        self.LatGridSpacing = 1.0 * ds["dlat"][0] / ds["dxy_scale"][0]
         # Note the subtraction in lat!
         lat = self.StartLat - self.LatGridSpacing * np.arange(self.nlat)
         lon = self.StartLon + self.LonGridSpacing * np.arange(self.nlon)
         self.Longitude, self.Latitude = np.meshgrid(lon, lat)
         self._get_tile_number()
         self.Height = (
-            1.0 * fileobj["Height"][0] / fileobj["z_scale"][0] / ALTITUDE_SCALE_FACTOR
+            1.0 * ds["Height"][0] / ds["z_scale"][0] / ALTITUDE_SCALE_FACTOR
         )
         if self.nz == 1:
             self.Height = [self.Height]  # Convert to array for compatibility
         # Actually populate the mrefl3d data, need to reverse Latitude axis
-        data3d = 1.0 * fileobj["data3d"][0] / fileobj["var_scale"][0]
+        data3d = 1.0 * ds["data3d"][0] / ds["var_scale"][0]
         data3d[:, :, :] = data3d[:, ::-1, :]
         setattr(self, DEFAULT_VAR, data3d)
         # Done!
@@ -589,34 +578,33 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def _populate_v1_specific_data(self, fileobj=None, label="mrefl_mosaic"):
+    def _populate_v1_specific_data(self, ds:Dataset=None, label:str="mrefl_mosaic"):
         """v1 MRMS netcdf data file"""
-        self.StartLat = fileobj.Latitude
-        self.StartLon = fileobj.Longitude
-        self.Height = fileobj.variables["Height"][:] / ALTITUDE_SCALE_FACTOR
-        self.Time = np.float64(fileobj.Time)
+        self.StartLat = ds.Latitude
+        self.StartLon = ds.Longitude
+        self.Height = ds.variables["Height"][:] / ALTITUDE_SCALE_FACTOR
+        self.Time = np.float64(ds.Time)
         self.Duration = V1_DURATION
-        ScaleFactor = fileobj.variables[label].Scale
-        self.mrefl3d = fileobj.variables[label][:, :, :] / ScaleFactor
+        ScaleFactor = ds.variables[label].Scale
+        self.mrefl3d = ds.variables[label][:, :, :] / ScaleFactor
         # Note the subtraction in lat!
         lat = self.StartLat - self.LatGridSpacing * np.arange(self.nlat)
         lon = self.StartLon + self.LonGridSpacing * np.arange(self.nlon)
         self.Variables = [DEFAULT_VAR]
         return lat, lon
 
-    def _populate_v2_specific_data(self, fileobj=None, label="MREFL"):
+    def _populate_v2_specific_data(self, ds:Dataset=None, label:str="MREFL"):
         """v2 MRMS netcdf data file"""
-        self.Height = fileobj.variables["Ht"][:] / ALTITUDE_SCALE_FACTOR
+        self.Height = ds.variables["Ht"][:] / ALTITUDE_SCALE_FACTOR
         # Getting errors w/ scipy 0.14 when np.array() not invoked below.
         # Think it was not properly converting from scipy netcdf object.
         # v1 worked OK because of the ScaleFactor division in
-        # _populate_v1_specific_data().
-        self.mrefl3d = np.array(fileobj.variables[label][:, :, :])
-        lat = fileobj.variables["Lat"][:]
-        lon = fileobj.variables["Lon"][:]
+        self.mrefl3d = np.array(ds.variables[label][:, :, :])
+        lat = ds.variables["Lat"][:]
+        lon = ds.variables["Lon"][:]
         self.StartLat = lat[0]
         self.StartLon = lon[0]
-        self.Time = fileobj.variables["time"][0]
+        self.Time = ds.variables["time"][0]
         self.Duration = V2_DURATION
         self.Variables = [DEFAULT_VAR]
         return lat, lon

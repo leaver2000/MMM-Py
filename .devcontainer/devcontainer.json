@@ -23,6 +23,7 @@
 				"python.linting.flake8Path": "/opt/venv/bin/flake8",
 				"python.linting.mypyPath": "/opt/venv/bin/mypy",
 				"python.linting.pylintPath": "/opt/venv/pylint",
+				"python.analysis.extraPaths":["/workspaces/mmmpy/third_party/stubs"],
 				// 
 				"vsicons.associations.folders": [
 					{
