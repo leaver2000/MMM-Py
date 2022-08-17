@@ -33,6 +33,9 @@
 						"format": "svg",
 						"overrides": "ipynb"
 					}
+				],
+				"indentRainbow.ignoreErrorLanguages": [ // the error on comments is obnoxius 
+					"*" 
 				]
 			},
 			// Add the IDs of extensions you want installed when the container is created.

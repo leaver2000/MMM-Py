@@ -6,7 +6,7 @@ ARG BASE_REGISTRY=mcr.microsoft.com \
 FROM ${BASE_REGISTRY}/${BASE_IMAGE}:${BASE_TAG} as base
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
-
+# install runtime requirements
 SHELL ["/bin/bash","-c"]
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
@@ -22,9 +22,8 @@ FROM base as builder
 USER root
 ENV PATH="/opt/venv/bin:$PATH"
 ENV DEBIAN_FRONTEND=noninteractive
-
+# install tools needed to compile cartopy
 SHELL ["/bin/bash","-c"]
-# tools needed to compile cartopy
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
     python3-dev \
@@ -43,6 +42,7 @@ FROM base as final
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+# set PATH and copy the virtual env
 ENV PATH="/opt/venv/bin:$PATH"
 COPY --chown=$USERNAME:$USER_GID --from=builder /opt/venv /opt/venv
 
