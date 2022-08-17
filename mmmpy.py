@@ -53,7 +53,7 @@ import datetime
 from struct import unpack
 
 import numpy as np
-from matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
 from netCDF4 import Dataset
 import six
@@ -65,7 +65,8 @@ try:
 except ImportError:
     IMPORT_FLAG = False
 
-VERSION = "1.6"
+__version__ = "1.7.0"
+VERSION = __version__
 
 # Hard coding of constants
 DEFAULT_CLEVS = np.arange(15) * 5.0
@@ -73,7 +74,7 @@ DEFAULT_VAR = "mrefl3d"
 DEFAULT_VAR_LABEL = "Reflectivity (dBZ)"
 V1_DURATION = 300.0  # seconds
 V2_DURATION = 120.0  # seconds
-ALTITUDE_SCALE_FACTOR = 1000.0  # Divide meters by this to get something else
+ALTITUDE_SCALE_FACTOR = 1_000.0  # Divide meters by this to get something else
 DEFAULT_CMAP = cm.GMT_wysiwyg
 DEFAULT_PARALLELS = 10  # [20, 37.5, 40, 55]
 DEFAULT_MERIDIANS = 10  # [230, 250, 265, 270, 280, 300]
@@ -93,9 +94,9 @@ DEFAULT_LINEWIDTH = 0.1
 ENDIAN = ""  # Endian currently set automatically by machine type
 INTEGER = "i"
 DEFAULT_VALUE_SCALE = 10
-DEFAULT_DXY_SCALE = 100000
+DEFAULT_DXY_SCALE = 100_000
 DEFAULT_Z_SCALE = 1
-DEFAULT_MAP_SCALE = 1000
+DEFAULT_MAP_SCALE = 1_000
 DEFAULT_MISSING_VALUE = -99
 DEFAULT_MRMS_VARNAME = b"mosaicked_refl1     "  # 20 characters
 DEFAULT_MRMS_VARUNIT = b"dbz   "  # 6 characters
@@ -113,11 +114,12 @@ MRMS_V3_LONRANGE = [-130.0, -60.0]
 # See 'https://docs.google.com/document/d/' +
 # '1Op3uETOtd28YqZffgvEGoIj0qU6VU966iT_QNUOmqn4/edit'
 # for details (doc claims 14 UTC, but CSU has v1 data thru 1550 UTC)
-V1_TO_V2_CHANGEOVER_EPOCH_TIME = 1375200000
+V1_TO_V2_CHANGEOVER_EPOCH_TIME = 1_375_200_000
 
 ###################################################
 # MosaicTile class
 ###################################################
+
 
 class MosaicTile:
     """
@@ -155,13 +157,13 @@ class MosaicTile:
     def __init__(
         self,
         filename: str | list[str] = None,
-        verbose:bool=False,
-        wgrib2_path:str=WGRIB2_PATH,
-        keep_nc:bool=True,
-        wgrib2_name:bool=WGRIB2_NAME,
-        nc_path:bool=TMPDIR,
-        latrange:tuple[float,float]=None,
-        lonrange:tuple[float,float]=None,
+        verbose: bool = False,
+        wgrib2_path: str = WGRIB2_PATH,
+        keep_nc: bool = True,
+        wgrib2_name: bool = WGRIB2_NAME,
+        nc_path: bool = TMPDIR,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
     ):
         """
         If initialized with a filename (incl. path), will call
@@ -212,21 +214,23 @@ class MosaicTile:
         """Basic printout of module capabilities"""
         _method_header_printout("help")
         print(
-        "To use: instance = MosaicTile(filepath+name)."
-        "Available read methods:"
-        "    read_mosaic_netcdf(<FILE>):"
-        "    read_mosaic_binary(<FILE>):"
-        "    read_mosaic_grib(<FILE(S)>):"
-        "Other available methods:"
-        "diag(), get_comp(),"
-        "subsection(), write_mosaic_binary(), output_composite()"
-        "To plot: display = MosaicDisplay(tile_instance)"
-        "Available plotting methods: plot_horiz(), plot_vert(),"
-        "                            three_panel_plot()"
+            "To use: instance = MosaicTile(filepath+name)."
+            "Available read methods:"
+            "    read_mosaic_netcdf(<FILE>):"
+            "    read_mosaic_binary(<FILE>):"
+            "    read_mosaic_grib(<FILE(S)>):"
+            "Other available methods:"
+            "diag(), get_comp(),"
+            "subsection(), write_mosaic_binary(), output_composite()"
+            "To plot: display = MosaicDisplay(tile_instance)"
+            "Available plotting methods: plot_horiz(), plot_vert(),"
+            "                            three_panel_plot()"
         )
         _method_footer_printout()
 
-    def read_mosaic_netcdf(self, full_path_and_filename:str, verbose:bool=False)->bool:
+    def read_mosaic_netcdf(
+        self, full_path_and_filename: str, verbose: bool = False
+    ) -> bool:
         """
         Reads MRMS NetCDF mosaic tiles.
         Attempts to distinguish between v1 (<= 7/30/2013)
@@ -286,7 +290,9 @@ class MosaicTile:
             _method_footer_printout()
         return True
 
-    def read_mosaic_binary(self, full_path_and_filename:str, verbose:bool=False)->bool:
+    def read_mosaic_binary(
+        self, full_path_and_filename: str, verbose: bool = False
+    ) -> bool:
         """
         Reads gzipped MRMS binary files and populates MosaicTile fields.
         Attempts to distinguish between v1 (<= 7/30/2013) and v2 (>= 7/30/2013)
@@ -361,14 +367,14 @@ class MosaicTile:
 
     def read_mosaic_grib(
         self,
-        filename,
+        filename: list[str],
         wgrib2_path=WGRIB2_PATH,
         keep_nc=True,
         wgrib2_name=WGRIB2_NAME,
-        verbose=False,
+        verbose: bool = False,
         nc_path=TMPDIR,
-        latrange=None,
-        lonrange=None,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
     ):
         """
         Method that is capable of reading grib2-format MRMS mosaics.
@@ -389,7 +395,6 @@ class MosaicTile:
                        before ingest
         """
         if verbose:
-            begin_time = time.time()
             _method_header_printout("read_mosaic_grib")
         self.Tile = "?"  # MRMS grib2 covers entire contiguous US
         self.Version = 3
@@ -430,7 +435,7 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def get_comp(self, var=DEFAULT_VAR, verbose=False):
+    def get_comp(self, var=DEFAULT_VAR, verbose: bool = False):
         """
         Compute maximum reflectivity in column and returns as a new 2-D field.
         Uses numpy.amax() function, which provides great performance.
@@ -453,7 +458,7 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def diag(self, verbose=False):
+    def diag(self, verbose: bool = False):
         """
         Prints out diagnostic information and produces
         a basic plot of tile/stitch composite reflectivity.
@@ -475,7 +480,7 @@ class MosaicTile:
         print("Done!")
         _method_footer_printout()
 
-    def write_mosaic_binary(self, full_path_and_filename=None, verbose=False):
+    def write_mosaic_binary(self, full_path_and_filename=None, verbose: bool = False):
         """
                 Major reference:
         ftp://ftp.nssl.noaa.gov/users/langston/MRMS_REFERENCE/MRMS_BinaryFormat.pdf
@@ -506,7 +511,13 @@ class MosaicTile:
             print(time.time() - begin_time, "seconds to complete")
             _method_footer_printout()
 
-    def subsection(self, latrange=None, lonrange=None, zrange=None, verbose=False):
+    def subsection(
+        self,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
+        zrange=None,
+        verbose: bool = False,
+    ):
         """
         Subsections a tile (or stitch) by keeping data only within the given
         2-element lists: latrange (deg), lonrange (deg), zrange (km).
@@ -535,7 +546,10 @@ class MosaicTile:
             _method_footer_printout()
 
     def output_composite(
-        self, full_path_and_filename=DEFAULT_FILENAME, var=DEFAULT_VAR, verbose=False
+        self,
+        full_path_and_filename=DEFAULT_FILENAME,
+        var=DEFAULT_VAR,
+        verbose: bool = False,
     ):
         """
         Produces a gzipped binary file containing only a composite of
@@ -859,10 +873,10 @@ class MosaicGrib(object):
         wgrib2_path=WGRIB2_PATH,
         keep_nc=True,
         wgrib2_name=WGRIB2_NAME,
-        verbose=False,
+        verbose: bool = False,
         nc_path=TMPDIR,
-        latrange=None,
-        lonrange=None,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
     ):
         """
         file_list = Single string or list of strings, can be for grib2
@@ -904,10 +918,10 @@ class MosaicGrib(object):
         wgrib2_path=WGRIB2_PATH,
         keep_nc=True,
         wgrib2_name=WGRIB2_NAME,
-        verbose=False,
+        verbose: bool = False,
         nc_path=TMPDIR,
-        latrange=None,
-        lonrange=None,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
     ):
         """
         Actual reading of grib2 and netCDF files occurs here.
@@ -1128,7 +1142,7 @@ class MosaicStitch(MosaicTile):
                    direction=direction)
     """
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose: bool = False):
         """
         Initializes class instance but leaves it to other methods to
         populate the class attributes.
@@ -1148,28 +1162,28 @@ class MosaicStitch(MosaicTile):
         print("except read_mosaic_*() methods are disabled to avoid problems")
         _method_footer_printout()
 
-    def read_mosaic_grib(self, filename, verbose=False):
+    def read_mosaic_grib(self, filename, verbose: bool = False):
         """Disabled in a MosaicStitch to avoid problems."""
         _method_header_printout("read_mosaic_grib")
         print("To avoid problems with reading individual MosaicTile classes")
         print("into a MosaicStitch, this method has been disabled")
         _method_footer_printout()
 
-    def read_mosaic_netcdf(self, filename, verbose=False):
+    def read_mosaic_netcdf(self, filename, verbose: bool = False):
         """Disabled in a MosaicStitch to avoid problems."""
         _method_header_printout("read_mosaic_netcdf")
         print("To avoid problems with reading individual MosaicTile classes")
         print("into a MosaicStitch, this method has been disabled")
         _method_footer_printout()
 
-    def read_mosaic_binary(self, filename, verbose=False):
+    def read_mosaic_binary(self, filename, verbose: bool = False):
         """Disabled in a MosaicStitch to avoid problems."""
         _method_header_printout("read_mosaic_binary")
         print("To avoid problems with reading individual MosaicTile classes")
         print("into a MosaicStitch, this method has been disabled")
         _method_footer_printout()
 
-    def stitch_ns(self, n_tile=None, s_tile=None, verbose=False):
+    def stitch_ns(self, n_tile=None, s_tile=None, verbose: bool = False):
         """
         Stitches MosaicTile pair or MosaicStitch pair (or mixed pair)
         in N-S direction.
@@ -1199,7 +1213,7 @@ class MosaicStitch(MosaicTile):
             print("Completed normally")
             _method_footer_printout()
 
-    def stitch_we(self, w_tile=None, e_tile=None, verbose=False):
+    def stitch_we(self, w_tile=None, e_tile=None, verbose: bool = False):
         """
         Stitches MosaicTile pair or MosaicStitch pair (or mixed pair)
         in W-E direction
@@ -1271,7 +1285,7 @@ class MosaicStitch(MosaicTile):
         self.Tile = a_tile.Tile + b_tile.Tile
 
     def _stitch_radar_variables(
-        self, a_tile=None, b_tile=None, verbose=False, ns_flag=True
+        self, a_tile=None, b_tile=None, verbose: bool = False, ns_flag=True
     ):
         """
         ns_flag=True means N-S stitch, False means W-E stitch.
@@ -1340,7 +1354,7 @@ class MosaicDisplay(object):
         linewidth=DEFAULT_LINEWIDTH,
         fig=None,
         ax=None,
-        verbose=False,
+        verbose: bool = False,
         return_flag=False,
         colorbar_flag=True,
         colorbar_loc="bottom",
@@ -1443,7 +1457,7 @@ class MosaicDisplay(object):
         cmap=DEFAULT_CMAP,
         title=None,
         save=None,
-        verbose=False,
+        verbose: bool = False,
         return_flag=False,
     ):
         """
@@ -1538,7 +1552,7 @@ class MosaicDisplay(object):
         xrange_b=None,
         xrange_c=None,
         save=None,
-        verbose=False,
+        verbose: bool = False,
         return_flag=False,
         show_crosshairs=True,
     ):
@@ -1692,7 +1706,9 @@ class MosaicDisplay(object):
                 print("Actually taking cross-section thru", level, "km MSL")
         return slevel, index
 
-    def _get_horizontal_cross_section(self, var=DEFAULT_VAR, level=None, verbose=False):
+    def _get_horizontal_cross_section(
+        self, var=DEFAULT_VAR, level=None, verbose: bool = False
+    ):
         slevel, index = self._get_slevel(level, verbose, print_flag=True)
         if index is None:
             if verbose:
@@ -1710,7 +1726,11 @@ class MosaicDisplay(object):
         return zdata, slevel
 
     def _create_basemap_instance(
-        self, latrange=None, lonrange=None, resolution="l", area_thresh=10000
+        self,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
+        resolution="l",
+        area_thresh=10000,
     ):
         # create Basemap instance
         lon_0 = np.mean(lonrange)
@@ -1739,8 +1759,8 @@ class MosaicDisplay(object):
         parallels=DEFAULT_PARALLELS,
         meridians=DEFAULT_MERIDIANS,
         linewidth=DEFAULT_LINEWIDTH,
-        latrange=None,
-        lonrange=None,
+        latrange: tuple[float, float] = None,
+        lonrange: tuple[float, float] = None,
         show_grid=True,
     ):
         if show_grid:
@@ -1780,7 +1800,7 @@ class MosaicDisplay(object):
         lon=None,
         xrange=None,
         xlabel=None,
-        verbose=False,
+        verbose: bool = False,
     ):
         """Execute slicing, get xvar, vcut"""
         fail = [None, None, None, None, None]
@@ -1913,7 +1933,7 @@ class MosaicDisplay(object):
 ###################################################
 
 
-def stitch_mosaic_tiles(map_array=None, direction=None, verbose=False):
+def stitch_mosaic_tiles(map_array=None, direction=None, verbose: bool = False):
     """
     Standalone function for stitching.
     Interprets map_array, a 1- or 2-rank list containing MosaicTile class
@@ -2036,7 +2056,7 @@ def _right_number_of_tiles(map_array=None):
 
 
 def _stitch_1d_array_we(
-    map_array=None, verbose=False, method_name="stitch_mosaic_tiles"
+    map_array=None, verbose: bool = False, method_name="stitch_mosaic_tiles"
 ):
     result = MosaicStitch()
     if verbose:
@@ -2058,7 +2078,7 @@ def _stitch_1d_array_we(
 
 
 def _stitch_1d_array_ns(
-    map_array=None, verbose=False, method_name="stitch_mosaic_tiles"
+    map_array=None, verbose: bool = False, method_name="stitch_mosaic_tiles"
 ):
     result = MosaicStitch()
     if verbose:
@@ -2079,7 +2099,9 @@ def _stitch_1d_array_ns(
     return result
 
 
-def _stitch_2d_array(map_array=None, verbose=False, method_name="stitch_mosaic_tiles"):
+def _stitch_2d_array(
+    map_array=None, verbose: bool = False, method_name="stitch_mosaic_tiles"
+):
     """Pass thru first doing N-S stitches, then E-W after"""
     ns_stitches = []
     for i in np.arange(np.shape(map_array)[1]):
