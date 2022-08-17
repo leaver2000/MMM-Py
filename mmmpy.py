@@ -2,9 +2,15 @@
 Title/Version
 -------------
 Marshall MRMS Mosaic Python Toolkit (MMM-Py)
-mmmpy v1.6
-Developed & tested with Python 2.7 & 3.4
-Last changed 05/23/2017
+mmmpy v2.0
+Developed & tested with Python 3.10
+Last changed xx/xx/2022
+
+Modified
+------
+Jason Leaver
+USAF Scott AFB
+jason.leaver@us.af.mil
 
 
 Author
@@ -113,8 +119,7 @@ V1_TO_V2_CHANGEOVER_EPOCH_TIME = 1375200000
 # MosaicTile class
 ###################################################
 
-crap =1
-class MosaicTile(object):
+class MosaicTile:
     """
     Overview
     --------
@@ -150,13 +155,13 @@ class MosaicTile(object):
     def __init__(
         self,
         filename: str | list[str] = None,
-        verbose=False,
-        wgrib2_path=WGRIB2_PATH,
-        keep_nc=True,
-        wgrib2_name=WGRIB2_NAME,
-        nc_path=TMPDIR,
-        latrange=None,
-        lonrange=None,
+        verbose:bool=False,
+        wgrib2_path:str=WGRIB2_PATH,
+        keep_nc:bool=True,
+        wgrib2_name:bool=WGRIB2_NAME,
+        nc_path:bool=TMPDIR,
+        latrange:tuple[float,float]=None,
+        lonrange:tuple[float,float]=None,
     ):
         """
         If initialized with a filename (incl. path), will call
@@ -206,20 +211,22 @@ class MosaicTile(object):
     def help(self):
         """Basic printout of module capabilities"""
         _method_header_printout("help")
-        print("To use: instance = MosaicTile(filepath+name).")
-        print("Available read methods:")
-        print("    read_mosaic_netcdf(<FILE>):")
-        print("    read_mosaic_binary(<FILE>):")
-        print("    read_mosaic_grib(<FILE(S)>):")
-        print("Other available methods:")
-        print("diag(), get_comp(),")
-        print("subsection(), write_mosaic_binary(), output_composite()")
-        print("To plot: display = MosaicDisplay(tile_instance)")
-        print("Available plotting methods: plot_horiz(), plot_vert(),")
-        print("                            three_panel_plot()")
+        print(
+        "To use: instance = MosaicTile(filepath+name)."
+        "Available read methods:"
+        "    read_mosaic_netcdf(<FILE>):"
+        "    read_mosaic_binary(<FILE>):"
+        "    read_mosaic_grib(<FILE(S)>):"
+        "Other available methods:"
+        "diag(), get_comp(),"
+        "subsection(), write_mosaic_binary(), output_composite()"
+        "To plot: display = MosaicDisplay(tile_instance)"
+        "Available plotting methods: plot_horiz(), plot_vert(),"
+        "                            three_panel_plot()"
+        )
         _method_footer_printout()
 
-    def read_mosaic_netcdf(self, full_path_and_filename, verbose=False):
+    def read_mosaic_netcdf(self, full_path_and_filename:str, verbose:bool=False)->bool:
         """
         Reads MRMS NetCDF mosaic tiles.
         Attempts to distinguish between v1 (<= 7/30/2013)
@@ -279,7 +286,7 @@ class MosaicTile(object):
             _method_footer_printout()
         return True
 
-    def read_mosaic_binary(self, full_path_and_filename, verbose=False):
+    def read_mosaic_binary(self, full_path_and_filename:str, verbose:bool=False)->bool:
         """
         Reads gzipped MRMS binary files and populates MosaicTile fields.
         Attempts to distinguish between v1 (<= 7/30/2013) and v2 (>= 7/30/2013)
