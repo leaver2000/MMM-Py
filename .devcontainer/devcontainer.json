@@ -23,7 +23,7 @@
 				"python.linting.flake8Path": "/opt/venv/bin/flake8",
 				"python.linting.mypyPath": "/opt/venv/bin/mypy",
 				"python.linting.pylintPath": "/opt/venv/pylint",
-				"python.analysis.extraPaths":["/workspaces/mmmpy/third_party/stubs"],
+				"python.analysis.extraPaths":["${workspaceFolder}/third_party/stubs"],
 				// 
 				"vsicons.associations.folders": [
 					{
@@ -63,8 +63,8 @@
 	],
 	// development path options
 	"remoteEnv": {
-		"PYTHONPATH": "/workspaces/MMM-Py/:${containerEnv:PYTHONPATH}:",
-		"JUPYTER_PATH": "/workspaces/MMM-Py/:${containerEnv:JUPYTER_PATH}"
+		"PYTHONPATH": "${containerEnv:PWD}:${containerEnv:PYTHONPATH}:",
+		"JUPYTER_PATH": "${containerEnv:PWD}:${containerEnv:JUPYTER_PATH}"
 	},
 	"remoteUser": "vscode"
 }

@@ -72,7 +72,7 @@ class Dataset:
     """
 
     dimensions: Dimensions
-    variables: dict[str, Variables]
+    variables: dict[str, Variable]
     groups: Groups
     cmptypes: ...
     vltypes: ...
