@@ -12,6 +12,18 @@ Jason Leaver
 USAF Scott AFB
 jason.leaver@us.af.mil
 
+TODO:
+- type-hints
+STATUS: inwork
+- unit-test
+STATUS: not started
+- setup.py
+STATUS: not started
+- function generators & dataclasses
+STATUS: not started
+- include cfgrib & possibly xarray
+STATUS: not started
+
 
 Author
 ------
