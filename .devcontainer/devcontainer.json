@@ -1,5 +1,5 @@
 {
-	"name": "GribLib",
+	"name": "mmmpy",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": "..",
@@ -42,10 +42,8 @@
 				"ms-python.vscode-pylance",
 				"ms-toolsai.jupyter",
 				// linting
-				"mikestead.dotenv",
 				"redhat.vscode-yaml",
 				"bungcip.better-toml",
-				"shanoor.vscode-nginx",
 				"oderwat.indent-rainbow",
 				// git
 				"eamodio.gitlens",
