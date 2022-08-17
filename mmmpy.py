@@ -435,7 +435,7 @@ class MosaicTile:
         if verbose:
             _method_footer_printout()
 
-    def get_comp(self, var=DEFAULT_VAR, verbose: bool = False):
+    def get_comp(self, var: str = DEFAULT_VAR, verbose: bool = False):
         """
         Compute maximum reflectivity in column and returns as a new 2-D field.
         Uses numpy.amax() function, which provides great performance.
@@ -2167,11 +2167,9 @@ def _fill_list(f, size, offset):
     return _list
 
 
-def _are_equal(num1, num2):
-    if np.abs(num1 - num2) < 0.001:
-        return True
-    else:
-        return False
+def _are_equal(num1: float, num2: float) -> bool:
+    # TODO: is this only ever called with scalar values? then can just us abs
+    return np.abs(num1 - num2) < 0.001
 
 
 ###################################################
