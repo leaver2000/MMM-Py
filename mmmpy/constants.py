@@ -1,5 +1,6 @@
 import numpy as np
-from mpl_toolkits.basemap import Basemap, cm
+
+# from mpl_toolkits.basemap import Basemap, cm
 
 # Hard coding of constants
 DEFAULT_CLEVS = np.arange(15) * 5.0
@@ -8,7 +9,7 @@ DEFAULT_VAR_LABEL = "Reflectivity (dBZ)"
 V1_DURATION = 300.0  # seconds
 V2_DURATION = 120.0  # seconds
 ALTITUDE_SCALE_FACTOR = 1000.0  # Divide meters by this to get something else
-DEFAULT_CMAP = cm.GMT_wysiwyg
+# DEFAULT_CMAP = cm.GMT_wysiwyg
 DEFAULT_PARALLELS = 10  # [20, 37.5, 40, 55]
 DEFAULT_MERIDIANS = 10  # [230, 250, 265, 270, 280, 300]
 HORIZONTAL_PLOT = [0.1, 0.1, 0.8, 0.8]

@@ -2,8 +2,8 @@ from pathlib import Path
 import mmmpy
 
 
-def test_unzip():
-    @mmmpy.use.unzip
+def test_unzip() -> None:
+    @mmmpy.use.unzip()
     def inner(filename) -> bool:
         assert isinstance(filename, Path)
         assert ".zip" not in filename.suffixes

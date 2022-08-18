@@ -42,9 +42,10 @@ if __name__ == "__main__":
         "data/mosaic3d_tile6_20130531-231500.netcdf.zip",
         # "data/mrms_binary_data.zip",
         # MRMS grib2
-        # "data/mrms_grib_data.zip",
+        "data/mrms_grib_data.zip",
     ]
     for file in filelist:
-        mrms:mmmpy.MRMSTile = mmmpy.read_mrms(file)[0]
-        assert isinstance(mrms.height,np.ma.MaskedArray)
-        assert isinstance(mrms.mrefl3d, np.ma.MaskedArray)
+        mrms = mmmpy.read_mrms(file)
+        print(mrms)
+        # assert isinstance(mrms.height,np.ma.MaskedArray)
+        # assert isinstance(mrms.mrefl3d, np.ma.MaskedArray)

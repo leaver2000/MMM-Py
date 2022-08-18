@@ -5,7 +5,8 @@ import warnings
 import zipfile
 from pathlib import Path
 from typing import Callable
-from functools import wraps
+
+# from functools import wraps
 import gzip
 
 ZIP, GZIP = ".zip", ".gz"
@@ -15,9 +16,19 @@ NETCDF = "netcdf"
 BINARY = "binary"
 
 
-def unzip(tmpdir=Path("/tmp/mmmpy/")):
-    """decorator function used to unzip various types of archive data"""
+def unzip(tmpdir:str|Path=Path("/tmp/mmmpy/")):
+    """
+    decorator function used to unzip various types of mrms archive data.
 
+    ```
+    @mmmpy.unzip("mytmp/folder/")
+    def myfunction(files:Path,filetype:str):
+        ...
+    myfunction("path/to/some.zip")
+    ```
+    """
+    if isinstance(tmpdir, str):
+        tmpdir = Path(tmpdir)
     def iterfiles():
         for file in tmpdir.glob("*"):
             # handle any gziped files

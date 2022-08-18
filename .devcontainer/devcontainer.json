@@ -61,10 +61,13 @@
 	"runArgs": [
 		// "--gpus=all"
 	],
+	"containerEnv":{
+		"MMMPY": "/workspaces/mmmpy:/workspaces/MMM-Py"
+	},
 	// development path options
 	"remoteEnv": {
-		"PYTHONPATH": "${containerEnv:PWD}:${containerEnv:PYTHONPATH}:",
-		"JUPYTER_PATH": "${containerEnv:PWD}:${containerEnv:JUPYTER_PATH}"
+		"PYTHONPATH": "${containerEnv:MMMPY}:${localEnv:workspaceFolder}",
+		"JUPYTER_PATH": "${containerEnv:MMMPY}:${containerEnv:JUPYTER_PATH}"
 	},
 	"remoteUser": "vscode"
 }

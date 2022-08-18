@@ -15,6 +15,7 @@ RUN apt-get update -y \
     # [GEOS && PROJ && GDAL] needed for cartopy
     libgeos-dev=3.10.2-1 libproj-dev=8.2.1-1 libgdal-dev=3.4.1+dfsg-1build4 \
     && rm -rf /var/lib/apt/lists/*
+
 # 
 # 
 # 
@@ -53,14 +54,14 @@ RUN cmake -DCMAKE_INSTALL_PREFIX="${ECCODES_DIR}" -DENABLE_PNG=ON .. \
 ENV ECCODES_DIR=$ECCODES_DIR
 # for docker caching purpose last install requirements
 RUN python3 -m venv /opt/venv \
-    && pip install --upgrade pip \
-    && pip install wheel 
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir wheel 
     
 COPY requirements.txt .
 COPY requirements-dev.txt .
 
-RUN pip install -r requirements.txt \
-    && pip install -r requirements-dev.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-dev.txt
 # 
 # 
 # 
