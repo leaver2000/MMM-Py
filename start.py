@@ -3,8 +3,9 @@ from pathlib import Path
 import zipfile
 
 import pygrib
-from netCDF4 import Dataset
+from netCDF4 import Dataset, Variable
 import mmmpy
+import xarray as xr
 
 ROOT = Path(os.path.abspath(__file__)).parent
 
@@ -22,17 +23,28 @@ def unzip():
 
 def use_netcdf4():
     for file in ARCHIVE.glob("*.netcdf"):
-        ds = n4.Dataset(file, mode="r")
-        assert isinstance(ds.variables,dict)
+        ds = Dataset(file, mode="r")
+        assert isinstance(ds.variables, dict)
         ref = ds.variables["mrefl_mosaic"]
-        assert isinstance(ref, n4.Variable)
+        assert isinstance(ref, Variable)
 
 
+@mmmpy.use.unzip()
+def read(filename):
+    assert isinstance(filename, Path)
+    assert ".zip" not in filename.suffixes
+    ...
+import numpy as np
 
 if __name__ == "__main__":
-    bfile = 'data/MREF3D33L_tile1.20140705.145200.gz'
-    nfile = 'data/mosaic3d_tile6_20130531-231500.netcdf.zip'    
-
-    ds = Dataset("mosaic3d_tile6_20130531-231500.netcdf")
-    
-    tile = mmmpy._read_netcdf(nfile)
+    filelist = [
+        # MRMS netCDF V1
+        "data/mosaic3d_tile6_20130531-231500.netcdf.zip",
+        # "data/mrms_binary_data.zip",
+        # MRMS grib2
+        # "data/mrms_grib_data.zip",
+    ]
+    for file in filelist:
+        mrms:mmmpy.MRMSTile = mmmpy.read_mrms(file)[0]
+        assert isinstance(mrms.height,np.ma.MaskedArray)
+        assert isinstance(mrms.mrefl3d, np.ma.MaskedArray)
