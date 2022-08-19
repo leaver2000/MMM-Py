@@ -21,7 +21,7 @@ class XARRAY_STORE:
     def __repr__(self) -> str:
         return self.to_xarray().__repr__()
 
-    def _repr_html_(self)->str:
+    def _repr_html_(self) -> str:
         return self.to_xarray()._repr_html_()
 
     def to_xarray(self) -> xr.Dataset:
@@ -43,9 +43,12 @@ class XARRAY_STORE:
 
 
 class MRMSDataset(XARRAY_STORE):
+    def __init__(self, data: xr.Dataset) -> None:
+        self._data = data
+
     @property
     def data(self) -> xr.Dataset:
-        return super()._data
+        return self._data
 
     @property
     def plot(self) -> "MRMSDisplay":

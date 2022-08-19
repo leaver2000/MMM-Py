@@ -1,11 +1,13 @@
 """module of utility decorator functions"""
 
+import uuid
 import gzip
 import shutil
 import zipfile
 import warnings
 from pathlib import Path
 from typing import Callable, TypeVar
+
 
 StrPath = TypeVar("StrPath", str, Path)
 
@@ -15,9 +17,10 @@ GRIB = "grib"
 GRIB2 = "grib2"
 NETCDF = "netcdf"
 BINARY = "binary"
+TMPDIR = f"/tmp/mmmpy-{uuid.uuid1()}/"
 
 
-def unzip(tmpdir: StrPath = Path("/tmp/mmmpy/")):
+def unzip(tmpdir: StrPath):
     """
     decorator function used to unzip various types of mrms archive data.
 
@@ -45,6 +48,7 @@ def unzip(tmpdir: StrPath = Path("/tmp/mmmpy/")):
                     with file.open("wb") as fout:
                         shutil.copyfileobj(ref, fout)
             yield file
+        # shutil.rmtree(tmpdir)
 
     # callback functions intended to handle extracting various
     def __outter(func: Callable):
