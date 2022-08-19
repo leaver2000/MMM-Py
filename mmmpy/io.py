@@ -18,7 +18,7 @@ def read_mrms(
     *,
     latrange: tuple[float, float] = None,
     lonrange: tuple[float, float] = None,
-)->MRMSDataset:
+) -> MRMSDataset:
     ...
 
 
@@ -32,12 +32,12 @@ def read_mrms(
 ) -> MRMSDataset:
     if filetype == "grib":
         ds = xr.open_mfdataset(
-        files,
-        engine="cfgrib",
-        concat_dim=["heightAboveSea"],
-        combine="nested",
-        chunks={},
-    )
+            files,
+            engine="cfgrib",
+            concat_dim=["heightAboveSea"],
+            combine="nested",
+            chunks={},
+        )
     elif filetype == "netcdf":
         ds = xr.open_mfdataset(files, engine="netcdf4", chunks={})
     elif filetype == "binary":

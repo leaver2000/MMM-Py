@@ -16,7 +16,7 @@ NETCDF = "netcdf"
 BINARY = "binary"
 
 
-def unzip(tmpdir:str|Path=Path("/tmp/mmmpy/")):
+def unzip(tmpdir: str | Path = Path("/tmp/mmmpy/")):
     """
     decorator function used to unzip various types of mrms archive data.
 
@@ -34,6 +34,7 @@ def unzip(tmpdir:str|Path=Path("/tmp/mmmpy/")):
     """
     if isinstance(tmpdir, str):
         tmpdir = Path(tmpdir)
+
     def iterfiles():
         for file in tmpdir.glob("*"):
             # handle any gziped files
