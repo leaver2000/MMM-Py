@@ -15,13 +15,13 @@ class BBox:
 
 
 class XARRAY_STORE:
-    def __init__(self, data: xr.Dataset | "MRMSDataset") -> None:
+    def __init__(self, data: xr.Dataset) -> None:
         self._data = data
 
     def __repr__(self) -> str:
         return self.to_xarray().__repr__()
 
-    def _repr_html_(self):
+    def _repr_html_(self)->str:
         return self.to_xarray()._repr_html_()
 
     def to_xarray(self) -> xr.Dataset:
@@ -34,6 +34,7 @@ class XARRAY_STORE:
         return self.to_xarray().to_pandas()
 
     def to_dask_dataframe(self) -> dd.DataFrame:
+        # dim_order: Sequence[Hashable] | None = None, set_index: bool = False
         return self.to_xarray().to_dask_dataframe()
 
     @property
