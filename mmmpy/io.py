@@ -134,13 +134,13 @@ def read_mrms(
 
     elif engine == "netcdf4":
         return NotImplemented
-        
+
     elif engine == "pygrib":
         return NotImplemented
-        
+
     elif engine == "wgrib2":
         return NotImplemented
-        
+
     elif engine == "binary":
         return NotImplemented
 
@@ -154,11 +154,11 @@ def read_mrms(
     (ds_name,) = ds
 
     hist = ds.attrs.pop("history", None)
-    # if a name was not explicility provided 
+    # if a name was not explicility provided
     if not name:
         # use the known name if unknow infer one from the file name
-        name =  ds_name if ds_name != "unknown" else __infer_name_from_file(hist)
-  
+        name = ds_name if ds_name != "unknown" else __infer_name_from_file(hist)
+
     return ds.rename({ds_name: name}).pipe(MRMSDataset, name=name)
 
 
