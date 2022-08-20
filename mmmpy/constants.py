@@ -1,3 +1,5 @@
+import uuid
+from pathlib import Path
 import numpy as np
 
 # from mpl_toolkits.basemap import Basemap, cm
@@ -49,3 +51,18 @@ MRMS_V3_LONRANGE = [-130.0, -60.0]
 # '1Op3uETOtd28YqZffgvEGoIj0qU6VU966iT_QNUOmqn4/edit'
 # for details (doc claims 14 UTC, but CSU has v1 data thru 1550 UTC)
 V1_TO_V2_CHANGEOVER_EPOCH_TIME = 1375200000
+
+
+class CaseInsitiveString(str):
+    def __eq__(self, __o: str) -> bool:
+        return self.casefold() == __o.casefold()
+
+
+ZIP = CaseInsitiveString(".zip")
+GZ = CaseInsitiveString(".gz")
+
+GRIB = CaseInsitiveString("grib")
+GRIB2 = CaseInsitiveString("grib2")
+NETCDF = CaseInsitiveString("netcdf")
+BINARY = CaseInsitiveString("binary")
+TMPDIR = Path(f"/tmp/mmmpy-{uuid.uuid1()}/")

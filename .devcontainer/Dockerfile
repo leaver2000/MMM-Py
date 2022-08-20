@@ -45,11 +45,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN wget -c --progress=dot:giga \
         https://confluence.ecmwf.int/download/attachments/45757960/${ECCODES}.tar.gz  -O - | tar -xz -C . --strip-component=1 
 # hop into the build directory 
+
 WORKDIR /tmp/build
 # install the ecCodes
 RUN cmake -DCMAKE_INSTALL_PREFIX="${ECCODES_DIR}" -DENABLE_PNG=ON .. \
     && make \
-    && make install
+    && make install \
+    && rm -rf /tmp/build
+ENV FC=gfortran
 
 ENV ECCODES_DIR=$ECCODES_DIR
 # for docker caching purpose last install requirements

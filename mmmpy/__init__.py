@@ -5,8 +5,10 @@ __all__ = [
     "MosaicTile",
     "read_mrms",
     "unzip",
+    "extract",
 ]
-# from ._mmmpy import MosaicDisplay, MosaicGrib, MosaicStitch, MosaicTile
+from . import extract
 from .io import read_mrms, unzip
+from ._mmmpy import MosaicDisplay, MosaicGrib, MosaicStitch, MosaicTile
 
 __version__ = "2.0.0"
