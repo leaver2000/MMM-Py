@@ -15,7 +15,7 @@
 			// Set *default* container specific settings.json values on container create.
 			"settings": {
 				// python
-				"python.defaultInterpreterPath": "/opt/venv/bin/python",
+				"python.defaultInterpreterPath": "/opt/venv/bin/python3.10",
 				"python.linting.enabled": true,
 				"python.linting.pylintEnabled": true,
 				"python.formatting.provider": "black",
@@ -23,6 +23,7 @@
 				"python.linting.flake8Path": "/opt/venv/bin/flake8",
 				"python.linting.mypyPath": "/opt/venv/bin/mypy",
 				"python.linting.pylintPath": "/opt/venv/pylint",
+				"python.analysis.extraPaths":["${workspaceFolder}/third_party/stubs"],
 				// 
 				"vsicons.associations.folders": [
 					{
@@ -60,10 +61,13 @@
 	"runArgs": [
 		// "--gpus=all"
 	],
+	"containerEnv":{
+		"MMMPY": "/workspaces/mmmpy:/workspaces/MMM-Py"
+	},
 	// development path options
 	"remoteEnv": {
-		"PYTHONPATH": "/workspaces/MMM-Py/:${containerEnv:PYTHONPATH}:",
-		"JUPYTER_PATH": "/workspaces/MMM-Py/:${containerEnv:JUPYTER_PATH}"
+		"PYTHONPATH": "${containerEnv:MMMPY}:${localEnv:workspaceFolder}",
+		"JUPYTER_PATH": "${containerEnv:MMMPY}:${containerEnv:JUPYTER_PATH}"
 	},
 	"remoteUser": "vscode"
 }
