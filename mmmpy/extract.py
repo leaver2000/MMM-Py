@@ -2,21 +2,64 @@
 functions to extract and archive mrms data from a few sources
 """
 __all__ = ["from_ncep", "from_mtarchive"]
-
+from email.generator import Generator
+import re
 import gzip
 import shutil
 from pathlib import Path
-from typing import Iterator
-from datetime import datetime
+from typing import Iterator, Callable
+from datetime import datetime, timedelta
 from typing import Iterator
 
 import pandas as pd
+import numpy as np
+from numpy.typing import NDArray
 from requests import Session, HTTPError
 from .typing import Archive
 from .constants import GZ
 
 
 HEADERS = {"accept": "gzip"}
+
+YYMMDD_HHMMSS = r"(\d{8}-\d{6})"
+DT64S = "datetime64[s]"
+ACCEPT_HTML = ("accept", "html")
+ACCEPT_GZIP = ("accept", "gzip")
+
+
+class PandasSession(Session):
+    def iterseries(
+        self,
+        __url: str,
+        __callback: Callable[[pd.Series], NDArray[np.bool_]],
+    ) -> Iterator[str]:
+        r = self.get(__url)
+        r.raise_for_status()
+        (html,) = pd.read_html(r.content)
+        directory = html["Name"].dropna()
+        yield from __url + directory[__callback(directory)]
+
+
+def ncep_url_generator(
+    parent="3DRefl",
+    input_dt: datetime = datetime.utcnow(),
+    max_seconds: int = 300,
+) -> Generator:
+    baseurl = f"http://mrms.ncep.noaa.gov/data/{parent}/"
+    delta = timedelta(seconds=max_seconds)
+
+    def filter_times(s: pd.Series):
+        return (
+            s.str.extract(YYMMDD_HHMMSS, expand=False).astype(DT64S).sub(input_dt).abs()
+            <= delta
+        )
+
+    with PandasSession() as session:
+        session.headers.update([ACCEPT_HTML])
+        for url in session.iterseries(
+            baseurl, lambda s: s.str.contains("MergedReflectivityQC")
+        ):
+            yield from session.iterseries(url, filter_times)
 
 
 def from_ncep(

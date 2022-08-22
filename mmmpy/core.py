@@ -41,8 +41,8 @@ class XARRAY_STORE:
         # dim_order: Sequence[Hashable] | None = None, set_index: bool = False
         return self.to_xarray().to_dask_dataframe()
 
-    def to_zarr(self, store, *args, **kwargs):
-        return self.data.to_zarr(store, *args, **kwargs)
+    def to_zarr(self, store, *args, mode="a", **kwargs):
+        return self.data.to_zarr(store, *args, mode=mode, **kwargs)
 
     @property
     def values(self) -> np.ndarray:

@@ -1,5 +1,6 @@
 __pycache__/
 **/.ipynb_checkpoints/*
 data/*
-!data/*.*
+!data/*.zip
+!data/*.gz
 .vscode/
