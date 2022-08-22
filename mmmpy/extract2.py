@@ -1,7 +1,8 @@
 """
 functions to extract and archive mrms data from a few sources
 """
-__all__ = ["from_ncep", "from_mtarchive"]
+__all__ = ["from_ncep", "from_mtarchive", "main"]
+import re
 import uuid
 import gzip
 import asyncio
@@ -10,12 +11,10 @@ from pathlib import Path
 from typing import Iterable, Callable, Iterator
 from datetime import datetime, timedelta
 
-
 import aiofiles
 from aiohttp.client import ClientSession
 
 
-import zarr
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -26,14 +25,17 @@ from requests import Session
 UTC = "UTC"
 MAX_TASKS = 5
 CFGRIB = "cfgrib"
-YYMMDD_HHMMSS = r"(\d{8}-\d{6})"
+GRIB2 = "grib2"
 ACCEPT_HTML = ("accept", "html")
 ACCEPT_GZIP = ("accept", "gzip")
-TMP_DIR = Path("/tmp/mmmpy/")
-datetime64s = "datetime64[s]"
-datetime64m = "datetime64[m]"
-GRIB2 = "grib2"
 
+TMP_DIR = Path("/tmp/mmmpy/")
+
+FILE_NAME_PATTERN = re.compile(r"/([A-Za-z]+(?:-|_)?[A-Za-z]+)+")
+YYMMDD_HHMMSS = r"(\d{8}-\d{6})"
+
+datetime64m = "datetime64[m]"
+datetime64s = "datetime64[s]"
 
 class PandasSession(Session):
     def iterseries(
@@ -74,13 +76,15 @@ def ncep_url_generator(
 
 
 async def fetch(session: ClientSession, url: str, sem: asyncio.Semaphore, tmpdir: Path):
-    tmpfile = tmpdir / f"{uuid.uuid1()}.{GRIB2}"
+
     async with sem:
         print(f"Downloading {url}")
         async with session.get(url) as res:
             content = await res.read()
 
-        async with aiofiles.open(tmpfile, "+wb") as tmp:
+        async with aiofiles.open(
+            tmpdir / url.split("/")[-1].removesuffix(".gz"), "+wb"
+        ) as tmp:
             await tmp.write(gzip.decompress(content))
 
 
@@ -88,6 +92,9 @@ async def fetch_concurrent(
     urls: Iterable[str],
     tmpdir: Path,
 ) -> None:
+    """
+    async downloadinging of data from the ncewp data server
+    """
     # In computer science, a semaphore is a
     # variable or abstract data type used to
     # control access to a common resource by
@@ -100,11 +107,28 @@ async def fetch_concurrent(
         await asyncio.gather(*(fetch(session, url, sem, tmpdir) for url in urls))
 
 
-def open_dataset(file: Path, store: Path) -> None:
+def dims(ds: xr.Dataset) -> xr.Dataset:
+    duplicates = ["heightAboveSea"]
+    # if more than one file was passed the valid_time should be greater than 1
+    if ds.valid_time.size > 1:
+        # for which we add a new validTime dimension
+        ds = ds.expand_dims({"validTime": ds["valid_time"].to_numpy()})
+        duplicates.append("validTime")
 
-    ds = xr.open_dataset(
-        file,
-        engine=CFGRIB,
+    return ds.drop("valid_time").drop_duplicates(duplicates)
+
+
+
+
+def open_dataset(files: Iterable[Path]) -> xr.Dataset:
+
+    ds = xr.open_mfdataset(
+        files,
+        chunks={},
+        engine="cfgrib",
+        data_vars="minimal",
+        combine="nested",
+        concat_dim=["heightAboveSea"],
         backend_kwargs=dict(
             mask_and_scale=True,
             decode_times=True,
@@ -120,20 +144,38 @@ def open_dataset(file: Path, store: Path) -> None:
             time_dims={"valid_time"},
         ),
     )
-
-    vt, height = (
-        ds[key].to_numpy().astype(dtype)
-        for key, dtype in (("valid_time", datetime64m), ("heightAboveSea", int))
+    ds = (
+        ds.expand_dims(
+            {
+                "validTime": [ds["valid_time"].to_numpy()],
+            }
+        )
+        .drop("valid_time")
+        .drop_duplicates(["validTime", "heightAboveSea"])
     )
 
-    path = f"{np.datetime_as_string(vt,timezone=UTC)}/{height}"
+    if len(ds.data_vars) != 1:
+        # mrms grib2 data should only have one variable
+        raise Exception
+    (ds_name,) = ds
+    # not storing history, will use the history object to infer a name
+    hist = ds.attrs.pop("history", None)
+    # if a name was not explicility provided
+    # if not name:
+    # use the known name if unknow infer one from the file name
+    if ds_name != "unknown":
+        name = ds_name
+    else:
+        name_list = FILE_NAME_PATTERN.findall(hist)
+        if name_list:
+            name = name_list[-1]
+        else:
+            name = "UNKNOWN"
 
-    ds.expand_dims({"validTime": [vt], "heightAboveSea": [height]}).drop(
-        "valid_time"
-    ).to_zarr(store=zarr.DirectoryStore(store / path), mode="a")
-
+    return ds.rename({ds_name: name})
 
 def main(store: Path):
+    # [EXTRACT]
     # crawl the dataset listing
     urls = ncep_url_generator(
         parent="3DRefl", input_dt=datetime.utcnow(), max_seconds=300
@@ -145,8 +187,36 @@ def main(store: Path):
     # async download files and gunzip the data
     asyncio.run(fetch_concurrent(urls, tmpdir))
     # convert the dataformat from grib -> zarr
-    for file in tmpdir.glob(f"*.{GRIB2}"):
-        open_dataset(file, store)
+    paths = pd.Series(tmpdir.glob(f"*.{GRIB2}"))
+    validtimes = pd.to_datetime(
+        paths.apply(lambda p: p.name).str.extract(r"(\d{8}-\d{6})", expand=False)
+    )
+    # group all of the downloaded files by the validtimes.
+    for _, files in paths.groupby(validtimes):
+        # ##########################
+        #       [TRANSFER]
+        # ##########################
+        ds = open_dataset(tuple(files))
+        dsname, = ds
+        # ##########################
+        #          [LOAD]
+        # ##########################
+        if not store.exists():
+            ds.to_zarr(
+                store,
+                mode="a",
+                group=dsname,
+                compute=True,
+            )
+        else:
+            ds.drop(["latitude", "longitude", "heightAboveSea"]).to_zarr(
+                store,
+                mode="a",
+                group=dsname,
+                append_dim="validTime",
+                compute=True,
+            )
+        
     # removed the data directory
     if tmpdir.exists():
         shutil.rmtree(tmpdir)

@@ -82,7 +82,6 @@ class ZarrBackend:
 
 Store = dict[Engine, Union[CFGribBackend, NETCDFBackend, ZarrBackend]]
 store: Store = {
-    
     "cfgrib": CFGribBackend(),
     "netcdf": NETCDFBackend(),
     "zarr": ZarrBackend(),

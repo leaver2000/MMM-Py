@@ -86,24 +86,26 @@ def write_to_store(
         )
 
 
-
+import mmmpy.extract2 as etl
 if __name__ == "__main__":
-    # the path to the data project data directory
-    data = Path(__file__).parent / "data"
-    # root store path
-    store = data / "store"
-    # 
-    if store.exists():
-        shutil.rmtree(store)
+    store = Path(__file__).parent / "data" / "ref3d.zarr"
 
-    store.mkdir(parents=True)
+    etl.main(store)
+    # # the path to the data project data directory
+    # # root store path
+    # store = data / "store"
+    # # 
+    # if store.exists():
+    #     shutil.rmtree(store)
 
-    write_to_store(
-        store,
-        files=(data / "MRMS_MergedReflectivity").glob("*.grib2"),
-    )
+    # store.mkdir(parents=True)
 
-    ds = xr.open_mfdataset(store.rglob("*.zarr"), engine="zarr")
+    # write_to_store(
+    #     store,
+    #     files=(data / "MRMS_MergedReflectivity").glob("*.grib2"),
+    # )
 
-    print(ds)
+    # ds = xr.open_mfdataset(store.rglob("*.zarr"), engine="zarr")
+
+    # print(ds)
     # print(xr.open_zarr(data / "store.zarr" ,consolidated=False))

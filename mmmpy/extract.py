@@ -45,7 +45,9 @@ def ncep_url_generator(
     input_dt: datetime = datetime.utcnow(),
     max_seconds: int = 300,
 ) -> Generator:
+
     baseurl = f"http://mrms.ncep.noaa.gov/data/{parent}/"
+
     delta = timedelta(seconds=max_seconds)
 
     def filter_times(s: pd.Series):
