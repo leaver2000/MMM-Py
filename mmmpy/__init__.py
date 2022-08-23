@@ -7,7 +7,6 @@ __all__ = [
     "unzip",
     "extract",
 ]
-from . import extract
 from .io import read_mrms, unzip
 from ._mmmpy import MosaicDisplay, MosaicGrib, MosaicStitch, MosaicTile
 

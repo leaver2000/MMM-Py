@@ -1,17 +1,30 @@
 """
 transfer
 """
-__all__ = ["PandasSession", "ncep_url_generator", "extract"]
+__all__ = ["transfer"]
 import re
 from pathlib import Path
+from typing import Literal
 from typing import Iterable
 
 import xarray as xr
 
 FILE_NAME_PATTERN = re.compile(r"/([A-Za-z]+(?:-|_)?[A-Za-z]+)+")
+VALID_TIME = "valid_time"
 
 
-def transfer(files: Iterable[Path]) -> xr.Dataset:
+def transfer(
+    files: Iterable[Path], vdim: Literal["heightAboveSea"] = None
+) -> xr.Dataset:
+    """
+    ### dimensions:
+    - latitude
+    - longitude
+    - heightAboveSea or None
+    - validTime
+
+    files should have only a single temporal and product dimension
+    """
 
     ds = xr.open_mfdataset(
         files,
@@ -19,7 +32,7 @@ def transfer(files: Iterable[Path]) -> xr.Dataset:
         engine="cfgrib",
         data_vars="minimal",
         combine="nested",
-        concat_dim=["heightAboveSea"],
+        concat_dim=[vdim],
         backend_kwargs=dict(
             mask_and_scale=True,
             decode_times=True,
@@ -32,18 +45,14 @@ def transfer(files: Iterable[Path]) -> xr.Dataset:
             read_keys=[],
             encode_cf=("parameter", "time", "geography", "vertical"),
             squeeze=True,
-            time_dims={"valid_time"},
+            time_dims={VALID_TIME},
         ),
     )
     ds = (
-        ds.expand_dims(
-            {
-                "validTime": [ds["valid_time"].to_numpy()],
-            }
+        ds.expand_dims({VALID_TIME: [ds[VALID_TIME].to_numpy()]}).drop_duplicates(
+            [VALID_TIME, vdim]
         )
-        .drop("valid_time")
-        .drop_duplicates(["validTime", "heightAboveSea"])
-    )
+    ).rename({VALID_TIME: "validTime"})
 
     if len(ds.data_vars) != 1:
         # mrms grib2 data should only have one variable

@@ -26,7 +26,6 @@ ACCEPT_HTML = ("accept", "html")
 
 YYMMDD_HHMMSS = r"(\d{8}-\d{6})"
 
-datetime64s = "datetime64[s]"
 TMP_DIR = Path("/tmp/mmmpy/")
 
 
@@ -63,7 +62,7 @@ def ncep_url_generator(
     def filter_times(s: pd.Series):
         return (
             s.str.extract(YYMMDD_HHMMSS, expand=False)
-            .astype(datetime64s)
+            .astype("datetime64[s]")
             .sub(start)
             .abs()
             <= delta
@@ -113,7 +112,8 @@ async def fetch_concurrent(
 
 def extract(
     group: Literal["3DRefl"] = "3DRefl",
-    start=datetime.utcnow(),
+    *,
+    start: datetime = ...,
     max_seconds: int = 300,
     tmpdir: Path = TMP_DIR / str(uuid.uuid1()),
 ) -> Iterable[Path]:

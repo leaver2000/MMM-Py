@@ -1,8 +1,20 @@
 from pathlib import Path
+from typing import Literal
 import xarray as xr
 
 
-def load(ds: xr.Dataset, store: Path) -> None:
+def load(
+    ds: xr.Dataset,
+    *,
+    store: Path = ...,
+    vdim: Literal["heightAboveSea"] | None = None,
+) -> None:
+    """
+    load the
+    """
+    if not vdim:
+        raise NotImplementedError
+
     (dsname,) = ds
     # ##########################
     #          [LOAD]
@@ -15,7 +27,7 @@ def load(ds: xr.Dataset, store: Path) -> None:
             compute=True,
         )
     else:
-        ds.drop(["latitude", "longitude", "heightAboveSea"]).to_zarr(
+        ds.drop(["latitude", "longitude", vdim]).to_zarr(
             store,
             mode="a",
             group=dsname,
