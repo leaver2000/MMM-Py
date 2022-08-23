@@ -109,19 +109,22 @@ async def fetch_concurrent(
     async with ClientSession(auto_decompress=False) as session:
         await asyncio.gather(*(fetch(session, url, sem, tmpdir) for url in urls))
 
-
 def extract(
     group: Literal["3DRefl"] = "3DRefl",
     *,
     start: datetime = ...,
     max_seconds: int = 300,
-    tmpdir: Path = TMP_DIR / str(uuid.uuid1()),
+    tmpdir: Path = ...,
 ) -> Iterable[Path]:
 
     urls = ncep_url_generator(group, start, max_seconds)
-
     if not tmpdir.exists():
         tmpdir.mkdir(parents=True)
     # async download files and gunzip the data
-    asyncio.run(fetch_concurrent(urls, tmpdir))
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        # TODO: validate this works within a jupyter notebook
+        loop.create_task(fetch_concurrent(urls, tmpdir))
+    else:
+        asyncio.run(fetch_concurrent(urls, tmpdir))
     return tmpdir.glob("*")

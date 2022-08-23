@@ -37,6 +37,7 @@ if __name__ == "__main__":
     if VERBOSE:
         print(f"{len(paths)} files downloaded")
         print(f"collected data for {len(validtimes.unique())} diffrent valid times")
+    print(paths)
     # then loop over the files, grouping them by the validtimes,
     # this is important for loading the data into the zarr store
     for _, files in paths.groupby(validtimes):
