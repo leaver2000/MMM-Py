@@ -37,6 +37,7 @@ YYMMDD_HHMMSS = r"(\d{8}-\d{6})"
 datetime64m = "datetime64[m]"
 datetime64s = "datetime64[s]"
 
+
 class PandasSession(Session):
     def iterseries(
         self,
@@ -118,8 +119,6 @@ def dims(ds: xr.Dataset) -> xr.Dataset:
     return ds.drop("valid_time").drop_duplicates(duplicates)
 
 
-
-
 def open_dataset(files: Iterable[Path]) -> xr.Dataset:
 
     ds = xr.open_mfdataset(
@@ -174,6 +173,7 @@ def open_dataset(files: Iterable[Path]) -> xr.Dataset:
 
     return ds.rename({ds_name: name})
 
+
 def main(store: Path):
     # [EXTRACT]
     # crawl the dataset listing
@@ -197,7 +197,7 @@ def main(store: Path):
         #       [TRANSFER]
         # ##########################
         ds = open_dataset(tuple(files))
-        dsname, = ds
+        (dsname,) = ds
         # ##########################
         #          [LOAD]
         # ##########################
@@ -216,7 +216,7 @@ def main(store: Path):
                 append_dim="validTime",
                 compute=True,
             )
-        
+
     # removed the data directory
     if tmpdir.exists():
         shutil.rmtree(tmpdir)
