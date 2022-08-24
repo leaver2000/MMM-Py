@@ -44,12 +44,11 @@ class PandasSession(Session):
         __url: str,
         __callback: Callable[[pd.Series], NDArray[np.bool_]],
     ) -> Iterator[str]:
-        r = self.get(__url)
+        r = self.get(__url, verify=False)
         r.raise_for_status()
         (html,) = pd.read_html(r.content)
         directory = html["Name"].dropna()
         yield from __url + directory[__callback(directory)]
-
 
 def ncep_url_generator(
     parent: Literal["3DRefl"],
@@ -82,7 +81,7 @@ async def fetch(
 
     async with semaphore:
         print(f"Downloading {url}")
-        async with session.get(url) as res:
+        async with session.get(url, verify=False) as res:
             content = await res.read()
 
         async with aiofiles.open(
