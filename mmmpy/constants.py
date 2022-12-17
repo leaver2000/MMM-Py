@@ -40,8 +40,8 @@ DEFAULT_FILENAME = "./mrms_binary_file.dat.gz"
 
 # Following is relevant to MRMS grib2 format read/write
 BASE_PATH = "/Users/tjlang/Downloads"
-TMPDIR = BASE_PATH + "/tmpdir/"
-WGRIB2_PATH = BASE_PATH + "/grib2/wgrib2/"
+TMPDIR = f"{BASE_PATH}/tmpdir/"
+WGRIB2_PATH = f"{BASE_PATH}/grib2/wgrib2/"
 WGRIB2_NAME = "wgrib2"
 MRMS_V3_LATRANGE = [20.0, 55.0]
 MRMS_V3_LONRANGE = [-130.0, -60.0]

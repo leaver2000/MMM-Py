@@ -168,9 +168,7 @@ def __infer_engine(
     engine = NotImplemented
 
     def infer() -> Iterable[Path]:
-        for file in files:
-            # engine = "cfgrib"...
-            yield file
+        yield from files
 
     if isinstance(files, Path):
         # engine = "cfgrib"...
@@ -183,8 +181,7 @@ def __infer_engine(
 
 def __infer_name_from_file(hist: str) -> Hashable:
     """resolve name from `dataset.attr["history"]`"""
-    name_list = FILE_PATTERN.findall(hist)
-    if name_list:
+    if name_list := FILE_PATTERN.findall(hist):
         return name_list[-1]
     return "UNABLE_TO_RESOLVE_NAME"
 

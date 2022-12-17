@@ -53,6 +53,7 @@ calendar, gzip, netCDF4, six, __future__, datetime
 Optional: pygrib
 """
 
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -116,8 +117,8 @@ DEFAULT_FILENAME = "./mrms_binary_file.dat.gz"
 
 # Following is relevant to MRMS grib2 format read/write
 BASE_PATH = "/Users/tjlang/Downloads"
-TMPDIR = BASE_PATH + "/tmpdir/"
-WGRIB2_PATH = BASE_PATH + "/grib2/wgrib2/"
+TMPDIR = f"{BASE_PATH}/tmpdir/"
+WGRIB2_PATH = f"{BASE_PATH}/grib2/wgrib2/"
 WGRIB2_NAME = "wgrib2"
 MRMS_V3_LATRANGE = [20.0, 55.0]
 MRMS_V3_LONRANGE = [-130.0, -60.0]
@@ -205,20 +206,20 @@ class MosaicTile:
                 print(flag)
                 if not flag:
                     flag = self.read_mosaic_netcdf(filename, verbose=verbose)
-                    if not flag:
-                        try:
-                            self.read_mosaic_grib(
-                                [filename],
-                                verbose=verbose,
-                                wgrib2_path=wgrib2_path,
-                                keep_nc=keep_nc,
-                                wgrib2_name=wgrib2_name,
-                                nc_path=nc_path,
-                                latrange=latrange,
-                                lonrange=lonrange,
-                            )
-                        except:
-                            print("Unknown file format, nothing read")
+                if not flag:
+                    try:
+                        self.read_mosaic_grib(
+                            [filename],
+                            verbose=verbose,
+                            wgrib2_path=wgrib2_path,
+                            keep_nc=keep_nc,
+                            wgrib2_name=wgrib2_name,
+                            nc_path=nc_path,
+                            latrange=latrange,
+                            lonrange=lonrange,
+                        )
+                    except:
+                        print("Unknown file format, nothing read")
             except:
                 print("No valid filename provided")
 
@@ -304,7 +305,7 @@ class MosaicTile:
             _method_header_printout("read_mosaic_binary")
             print("Reading", full_path_and_filename)
         # Check to see if a real MRMS binary file
-        if full_path_and_filename[-3:] == ".gz":
+        if full_path_and_filename.endswith(".gz"):
             f = gzip.open(full_path_and_filename, "rb")
         else:
             f = open(full_path_and_filename, "rb")
@@ -399,9 +400,9 @@ class MosaicTile:
         self.Version = 3
         self.Duration = V2_DURATION  # MRMS grib2 timing still every 2 min
         self.Filename = (
-            os.path.basename(filename[0])
-            if not isinstance(filename, six.string_types)
-            else os.path.basename(filename)
+            os.path.basename(filename)
+            if isinstance(filename, six.string_types)
+            else os.path.basename(filename[0])
         )
         self.Variables = [DEFAULT_VAR]
         gribfile = MosaicGrib(
@@ -453,7 +454,7 @@ class MosaicTile:
                 print("Computing composite field")
         temp_3d = getattr(self, var)
         temp_comp = np.amax(temp_3d, axis=0)
-        setattr(self, var + "_comp", temp_comp)
+        setattr(self, f"{var}_comp", temp_comp)
         if verbose:
             _method_footer_printout()
 
@@ -563,12 +564,12 @@ class MosaicTile:
             if verbose:
                 _method_footer_printout()
             return
-        if not hasattr(self, var + "_comp"):
+        if not hasattr(self, f"{var}_comp"):
             if verbose:
-                print(var + "_comp does not exist,", "computing it with get_comp()")
+                print(f"{var}_comp does not exist,", "computing it with get_comp()")
             self.get_comp(var=var, verbose=verbose)
         self.subsection(zrange=[self.Height[0], self.Height[0]], verbose=verbose)
-        temp2d = getattr(self, var + "_comp")
+        temp2d = getattr(self, f"{var}_comp")
         temp3d = getattr(self, var)
         temp3d[0, :, :] = temp2d[:, :]
         setattr(self, var, temp3d)
@@ -614,7 +615,7 @@ class MosaicTile:
         unicode_literals module from __future__. However,
         the method works fine under Python 3.4 as written.
         """
-        dt = np.dtype(
+        return np.dtype(
             [
                 ("year", "i4"),
                 ("month", "i4"),
@@ -648,7 +649,6 @@ class MosaicTile:
                 ("data3d", ("i2", (self.nz, self.nlat, self.nlon))),
             ]
         )
-        return dt
 
     def _get_tile_number(self):
         """Returns tile number as a string based on starting lat/lon"""
@@ -725,7 +725,7 @@ class MosaicTile:
         deprec5 = np.int32(1000).tostring()
         ph = 0 * np.arange(10) + 19000
         placeholder = np.int32(ph).tostring()  # 10 placeholder values
-        header = b"".join(
+        return b"".join(
             [
                 year,
                 month,
@@ -758,7 +758,6 @@ class MosaicTile:
                 rad_name,
             ]
         )
-        return header
 
     def _construct_1d_data(self):
         """
@@ -929,13 +928,11 @@ class MosaicGrib(object):
         if verbose:
             begin_time = time.time()
         # Make the directory where netCDFs will be stored
-        os.system("mkdir " + TMPDIR)
-        tmpf = nc_path + "default.grib2"
+        os.system(f"mkdir {TMPDIR}")
+        tmpf = f"{nc_path}default.grib2"
         nclist = []
         gblist = []
-        for grib in (
-            file_list if not isinstance(file_list, six.string_types) else [file_list]
-        ):
+        for grib in [file_list] if isinstance(file_list, six.string_types) else file_list:
             try:
                 # See if passed netCDFs already created by wgrib2
                 nc = NetcdfFile(grib)
@@ -945,8 +942,8 @@ class MosaicGrib(object):
                 # Can try to decompress if gzipped
                 gzip_flag = False
                 if grib[-3:] == ".gz":
-                    os.system("gzip -d " + grib)
-                    grib = grib[0:-3]
+                    os.system(f"gzip -d {grib}")
+                    grib = grib[:-3]
                     gzip_flag = True
                 # wgrib2 call is made via os.system()
                 gribf = os.path.basename(grib)
@@ -967,11 +964,10 @@ class MosaicGrib(object):
                             + gribf
                             + ".nc"
                         )
-                    # Subsectioning before reading
                     else:
-                        if latrange is None and lonrange is not None:
+                        if latrange is None:
                             latrange = MRMS_V3_LATRANGE
-                        elif latrange is not None and lonrange is None:
+                        elif lonrange is None:
                             lonrange = MRMS_V3_LONRANGE
                         slat = self.convert_array_to_string(latrange)
                         slon = self.convert_array_to_string(np.array(lonrange) + 360.0)
@@ -1004,9 +1000,9 @@ class MosaicGrib(object):
                     # Here the output netCDF is actually read
                     nclist.append(NetcdfFile(nc_path + gribf + ".nc"))
                     if not keep_nc:
-                        os.system("rm -f " + nc_path + gribf + ".nc")
+                        os.system(f"rm -f {nc_path}{gribf}.nc")
                 if gzip_flag:
-                    os.system("gzip " + grib)
+                    os.system(f"gzip {grib}")
         if IMPORT_FLAG:
             self.gblist = gblist
             self.format_grib_data()
@@ -1017,28 +1013,25 @@ class MosaicGrib(object):
             print("MosaicGrib:", time.time() - begin_time, "seconds to run")
 
     def convert_array_to_string(self, array):
-        return str(np.min(array)) + ":" + str(np.max(array))
+        return f"{str(np.min(array))}:{str(np.max(array))}"
 
     def get_height_from_name(self, name):
         """
         Given a reflectivity variable name, get height information.
         Works on CONUS and CONUSPlus MRMS mosaics.
         """
-        if name[0:9] == "CONUSPlus":
-            index = 30
-        else:
-            index = 26
+        index = 30 if name[:9] == "CONUSPlus" else 26
         str_height = name[index : index + 5]
         if str_height[4] != "0":
-            str_height = str_height[0:4]
+            str_height = str_height[:4]
         if str_height[3] != "0":
-            str_height = str_height[0:3]
+            str_height = str_height[:3]
         return float(str_height) / ALTITUDE_SCALE_FACTOR
 
     def get_reflectivity_data(self, ncfile):
         """Grab 2D reflectivity data from CONUS* variable"""
         for var in ncfile.variable_list:
-            if var[0:5] == "CONUS":
+            if var[:5] == "CONUS":
                 return getattr(ncfile, var)
 
     def format_grib_data(self):
@@ -1091,9 +1084,11 @@ class MosaicGrib(object):
         """
         height = []
         for nc in self.nclist:
-            for var in nc.variable_list:
-                if var[0:5] == "CONUS":
-                    height.append(self.get_height_from_name(var))
+            height.extend(
+                self.get_height_from_name(var)
+                for var in nc.variable_list
+                if var[:5] == "CONUS"
+            )
         height = np.array(height)
         mrefl3d = np.zeros(
             (
@@ -1196,7 +1191,7 @@ class MosaicStitch(MosaicTile):
         # Check to make sure np.append() will not fail due to different grids
         if n_tile.nlon != s_tile.nlon:
             print(
-                method_name + "(): Grid size in Longitude does not match,",
+                f"{method_name}(): Grid size in Longitude does not match,",
                 "fix this before proceeding",
             )
             return
@@ -1204,7 +1199,7 @@ class MosaicStitch(MosaicTile):
             n_tile, s_tile, verbose, ns_flag=True
         )
         if index == 0:
-            print(method_name + "(): No radar vars to stitch! Returning ...")
+            print(f"{method_name}(): No radar vars to stitch! Returning ...")
             return
         self._stitch_metadata(n_tile, s_tile, inlat, ns_flag=True)
         if verbose:
@@ -1226,13 +1221,13 @@ class MosaicStitch(MosaicTile):
         # Check to make sure np.append() will not fail due to different grids
         if w_tile.nlat != e_tile.nlat:
             print(
-                method_name + "(): Grid size in Latitude does not match,",
+                f"{method_name}(): Grid size in Latitude does not match,",
                 "fix this before proceeding",
             )
             return
         inlon, index = self._stitch_radar_variables(w_tile, e_tile, ns_flag=False)
         if index == 0:
-            print(method_name + "(): No radar vars to stitch! Returning ...")
+            print(f"{method_name}(): No radar vars to stitch! Returning ...")
             return
         self._stitch_metadata(w_tile, e_tile, inlon, ns_flag=False)
         if verbose:
@@ -1253,7 +1248,7 @@ class MosaicStitch(MosaicTile):
             )
             if a_tile.Version == 1:
                 self.nlat = a_tile.nlat + b_tile.nlat - 1
-            if a_tile.Version == 2:
+            elif a_tile.Version == 2:
                 self.nlat = a_tile.nlat + b_tile.nlat
             self.nlon = a_tile.nlon
         else:
@@ -1265,14 +1260,14 @@ class MosaicStitch(MosaicTile):
             )
             if a_tile.Version == 1:
                 self.nlon = a_tile.nlon + b_tile.nlon - 1
-            if a_tile.Version == 2:
+            elif a_tile.Version == 2:
                 self.nlon = a_tile.nlon + b_tile.nlon
             self.nlat = a_tile.nlat
         # Populate the other metadata attributes
         self.Height = a_tile.Height
         self.StartLat = a_tile.StartLat
         self.StartLon = a_tile.StartLon
-        self.Filename = a_tile.Filename + "+" + b_tile.Filename
+        self.Filename = f"{a_tile.Filename}+{b_tile.Filename}"
         self.nz = a_tile.nz
         self.LatGridSpacing = a_tile.LatGridSpacing
         self.LonGridSpacing = a_tile.LonGridSpacing
@@ -1492,7 +1487,7 @@ class MosaicDisplay(object):
             return
         # Plot details
         if not title:
-            title = epochtime_to_string(self.mosaic.Time) + " " + tlabel
+            title = f"{epochtime_to_string(self.mosaic.Time)} {tlabel}"
         if not zrange:
             zrange = [0, np.max(self.mosaic.Height)]
         # Plot execution
@@ -1606,7 +1601,7 @@ class MosaicDisplay(object):
             return
         if lat is None or lon is None:
             print(
-                method_name + "(): Need both constant latitude and",
+                f"{method_name}(): Need both constant latitude and",
                 "constant longitude for slices",
             )
             if verbose:
@@ -1618,7 +1613,7 @@ class MosaicDisplay(object):
         ax1 = fig.add_axes(THREE_PANEL_SUBPLOT_A)
         if not title_a:
             slevel, index = self._get_slevel(level, verbose)
-            title_a = "(a) " + epochtime_to_string(self.mosaic.Time) + slevel
+            title_a = f"(a) {epochtime_to_string(self.mosaic.Time)}{slevel}"
         fig, ax1, m = self.plot_horiz(
             var=var,
             title=title_a,
@@ -1645,7 +1640,7 @@ class MosaicDisplay(object):
         # Vertical Cross-Section (subplot b)
         if not title_b:
             lat, tlabel2 = self._parse_lat_tlabel(lat)
-            title_b = "(b) " + tlabel2
+            title_b = f"(b) {tlabel2}"
         ax2 = fig.add_axes(THREE_PANEL_SUBPLOT_B)
         self.plot_vert(
             var=var,
@@ -1663,7 +1658,7 @@ class MosaicDisplay(object):
         # Vertical Cross-Section (subplot c)
         if not title_c:
             lon, tlabel3 = self._parse_lon_tlabel(lon)
-            title_c = "(c) " + tlabel3
+            title_c = f"(c) {tlabel3}"
         ax3 = fig.add_axes(THREE_PANEL_SUBPLOT_C)
         self.plot_vert(
             var=var,
@@ -1711,16 +1706,15 @@ class MosaicDisplay(object):
         if index is None:
             if verbose:
                 print("No vertical level specified,", "plotting composite reflectivity")
-            if not hasattr(self.mosaic, var + "_comp"):
+            if not hasattr(self.mosaic, f"{var}_comp"):
                 if verbose:
-                    print(var + "_comp does not exist,", "computing it with get_comp()")
+                    print(f"{var}_comp does not exist,", "computing it with get_comp()")
                 self.mosaic.get_comp(var=var, verbose=verbose)
-            zdata = 1.0 * getattr(self.mosaic, var + "_comp")
-            zdata = np.transpose(zdata)
+            zdata = 1.0 * getattr(self.mosaic, f"{var}_comp")
         else:
             temp_3d = 1.0 * getattr(self.mosaic, var)
             zdata = temp_3d[index, :, :]
-            zdata = np.transpose(zdata)
+        zdata = np.transpose(zdata)
         return zdata, slevel
 
     def _create_basemap_instance(
@@ -1912,10 +1906,7 @@ class MosaicDisplay(object):
         ax.set_ylim(np.min(zrange), np.max(zrange))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(zlabel)
-        if mappable:
-            return ax, cs
-        else:
-            return ax
+        return (ax, cs) if mappable else ax
 
     def _parse_ax_fig(self, ax=None, fig=None):
         """Parse and return ax and fig parameters. Adapted from Py-ART."""
@@ -1955,7 +1946,7 @@ def stitch_mosaic_tiles(map_array=None, direction=None, verbose: bool = False):
     # 1-D stitching, either N-S or W-E
     if np.ndim(map_array) == 1:
         # direction unset or not a string = direction fail
-        if direction is None or isinstance(direction, str) is False:
+        if direction is None or not isinstance(direction, str):
             _print_direction_fail(method_name)
             return
         # E-W Stitching only
@@ -1972,11 +1963,9 @@ def stitch_mosaic_tiles(map_array=None, direction=None, verbose: bool = False):
         else:
             _print_direction_fail(method_name)
             return
-    # map_array fail
     elif np.ndim(map_array) < 1 or np.ndim(map_array) > 2:
-        print(method_name + "(): map_array is not right,", "use 1- or 2-rank array")
+        print(f"{method_name}(): map_array is not right,", "use 1- or 2-rank array")
         return
-    # 2-D stitching in N-S and W-E
     else:
         if verbose:
             print(
@@ -2015,10 +2004,7 @@ def compute_grid_attributes(dz3d, lat, lon, height):
         th2 = np.deg2rad(90.0 + lat[j, 0] + latdel / 2.0)
         sa[j, :] = re**2 * londelr * (np.cos(th1) - np.cos(th2))
         for k in np.arange(len(height)):
-            if k == 0:
-                hdel = height[k]
-            else:
-                hdel = height[k] - height[k - 1]
+            hdel = height[k] if k == 0 else height[k] - height[k - 1]
             vol[k, j, :] = hdel * sa[j, 0]
     return vol, sa
 
@@ -2046,11 +2032,10 @@ def epochtime_to_string(epochtime=None, use_second=False):
 
 def _right_number_of_tiles(map_array=None):
     num_tiles = np.shape(map_array)[0] * np.shape(map_array)[1]
-    if num_tiles % 2 != 0 or num_tiles > 8 or num_tiles <= 0:
-        _print_wrong_number_of_tiles("stitch_mosaic_tiles")
-        return False
-    else:
+    if num_tiles % 2 == 0 and num_tiles <= 8 and num_tiles > 0:
         return True
+    _print_wrong_number_of_tiles("stitch_mosaic_tiles")
+    return False
 
 
 def _stitch_1d_array_we(
@@ -2123,7 +2108,7 @@ def _stitch_2d_array(
 def _method_header_printout(method_name=" "):
     print("")
     print("********************")
-    print(method_name + "():")
+    print(f"{method_name}():")
 
 
 def _method_footer_printout():
@@ -2132,16 +2117,16 @@ def _method_footer_printout():
 
 
 def _print_direction_fail(method_name=" "):
-    print(method_name + "(): Sent a 1-D array but no direction to stitch!")
+    print(f"{method_name}(): Sent a 1-D array but no direction to stitch!")
     print("Use direction='we' or direction='ns' in argument to fix")
 
 
 def _print_missing_a_tile(method_name=" "):
-    print(method_name + "(): Missing a tile, fix and try again")
+    print(f"{method_name}(): Missing a tile, fix and try again")
 
 
 def _print_wrong_number_of_tiles(method_name=" "):
-    print(method_name + "(): Wrong number of tiles, fix and try again")
+    print(f"{method_name}(): Wrong number of tiles, fix and try again")
 
 
 def _print_method_done():
@@ -2150,11 +2135,11 @@ def _print_method_done():
 
 
 def _print_method_called_incorrectly(method_name=" "):
-    print(method_name + "(): Method called incorrectly, check syntax")
+    print(f"{method_name}(): Method called incorrectly, check syntax")
 
 
 def _print_variable_does_not_exist(method_name=" ", var=DEFAULT_VAR):
-    print(method_name + "():", var, "does not exist, try reading in a file")
+    print(f"{method_name}():", var, "does not exist, try reading in a file")
 
 
 def _fill_list(f, size, offset):
